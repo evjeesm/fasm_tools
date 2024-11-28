@@ -1,3 +1,19 @@
+
+; Mark code block as debug block
+; that can be excluded from release build.
+; Debug mode is default.
+; To compile in release mode: fasm -d RELEASE=1 code.asm
+
+macro DEBUG
+ {
+ if ~ defined RELEASE
+ }
+
+macro END_DEBUG
+ {
+ end if ; ~ RELEASE
+ }
+
 macro DISP_DEC num*
  {
     local c,n,dv,dg
