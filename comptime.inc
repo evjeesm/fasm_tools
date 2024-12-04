@@ -95,62 +95,58 @@ macro DISP_HEX num*, sign:UNSIGNED
 
 macro DISP_DOUBLE num*, precision:3
  {
-    local sign,exp,actual_exp,norm_mantisa,i
-    local integer_part,fractional_part,scale,digs,full_frac
-    sign = ((b) shr 63) and 1
-    exp = (b) shr 52 and 0x7FF
-    actual_exp = exp - 1023
-    mantisa = (b) and (0xF_FFFF_FFFF_FFFF)
-    norm_mantisa = (mantisa or (1 shl 52))
-    if (exp = 0x7FF & mantisa = 0)
+    local bitlen,explen,mantisalen,expmask,expbias,mantisamask
+    local sign,exp,actual_exp,norm_mantisa,i,mask
+    local integer_part,fractional_part
+    bitlen = 64
+    explen = 11
+    expbias = 1023
+    mantisalen = 52
+    sign = ((num) shr (bitlen - 1)) and 0x1
+    expmask = (0x1 shl explen) - 1
+    exp = (num) shr mantisalen and expmask
+    actual_exp = exp - expbias
+    mantisamask = (0x1 shl mantisalen) - 1
+    mantisa = (num) and (mantisamask)
+    norm_mantisa = mantisa
+    if exp <> -expbias
+        norm_mantisa = (mantisa or (1 shl mantisalen))
+    end if
+    if (exp = expmask & mantisa = 0)
         if sign
             display '-'
         else
             display '+'
         end if
         display 'inf'
-    else if (exp = 0x7FF & mantisa <> 0)
+    else if (exp = expmask & mantisa <> 0)
         display 'NaN'
     else
         if sign
             display '-'
         end if
-        if actual_exp > 0
-            i = (bsr norm_mantisa) - actual_exp
-            mask = (1 shl i) - 1
-            scaled_mantisa = ((norm_mantisa and mask) shl actual_exp)
+        if actual_exp > 52
+            display '<TOO LARGE>'
+        else if actual_exp < -52
+            display '<TOO SMALL>'
         else
-            scaled_mantisa = norm_mantisa shr -actual_exp
+            if actual_exp > 0
+                i = (bsr norm_mantisa) - actual_exp
+                mask = (1 shl i) - 1
+                scaled_mantisa = ((norm_mantisa and mask) shl actual_exp)
+            else
+                scaled_mantisa = norm_mantisa shr -actual_exp
+            end if
+            integer_part = (norm_mantisa shr (mantisalen - actual_exp))
+            fractional_part = scaled_mantisa and (mantisamask)
+            DISP_DEC integer_part
+            display '.'
+            repeat precision
+                fractional_part = fractional_part * 10
+                DISP_DEC (fractional_part shr mantisalen) mod 10
+                fractional_part = fractional_part and mantisamask
+            end repeat
         end if
-        integer_part = (norm_mantisa shr (52 - actual_exp))
-        scale = 1
-        rept precision
-         \{
-            scale = scale * 10
-         \}
-        fractional_part = scaled_mantisa and ((1 shl 52) - 1)
-        digs = 0
-        full_frac = 0
-        while digs < (precision + 1)
-            digs = digs + 1
-            fractional_part = fractional_part * 10
-            full_frac = full_frac * 10 + (fractional_part shr 52)
-            fractional_part = fractional_part and ((1 shl 52) - 1)
-        end while
-        if (full_frac mod 10) >= 5
-            full_frac = full_frac + 10 - (full_frac mod 10)
-        end if
-        full_frac = full_frac / 10
-        if full_frac = scale
-            full_frac = 0
-            integer_part = integer_part + 1
-        end if
-        while full_frac <> 0 & full_frac mod 10 = 0
-            full_frac = full_frac / 10
-        end while
-        DISP_DEC integer_part,
-        display '.'
-        DISP_DEC full_frac
     end if
  }
 
