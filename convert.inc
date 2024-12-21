@@ -13,10 +13,10 @@ macro TO_HEX
         and bl, 0x0f
         add r9b, bl
         mov bl, [r9]
-        sub rdx, 1
+        dec rdx
         mov byte [rdx], bl
         shr rdi, 4
-        add rax, 1
+        inc rax
         cmp rax, rsi
         jl .nibble
     ret
@@ -41,11 +41,11 @@ macro U64_10_TOA_ST reg*
     mov r11, 10
     push rbx
     mov rbx, rsp
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], 0
     .digit:
         div r11
-        sub rsp, 1          ; allocate digit
+        dec rsp          ; allocate digit
         inc cl              ; count bytes
         add rdx, '0'        ; to ascii
         mov byte [rsp], dl  ; store
@@ -64,11 +64,11 @@ macro U8_10_TOA_ST reg*
     mov r11b, 10
     push rbx
     mov rbx, rsp
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], 0
     .digit:
         div r11b
-        sub rsp, 1          ; allocate digit
+        dec rsp          ; allocate digit
         inc cl              ; count bytes
         add ah, '0'         ; to ascii
         mov byte [rsp], ah  ; store
@@ -91,13 +91,14 @@ macro U8_10_TOA_ST reg*
     mov r11, base
     push rbx
     mov rbx, rsp
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], 0
+    lea r9, [.S]
     .digit:
         div r11
-        sub rsp, 1          ; allocate digit
+        dec rsp             ; allocate digit
         inc cl              ; count bytes
-        mov dl, [.S + rdx]  ; to ascii
+        mov dl, [r9 + rdx]  ; to ascii
         mov byte [rsp], dl  ; store
         xor edx, edx
         test eax, eax
@@ -125,17 +126,16 @@ macro S64_10_TOA_ST reg*
     xor r10b, r10b
     push rbx
     mov rbx, rsp
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], 0
     test rax, rax
     jns .digit
-    not rax ; 2th complement
-    inc rax ;
+    neg rax
     inc cl
     dec r10b ; set sign
     .digit:
         div r11
-        sub rsp, 1          ; allocate digit
+        dec rsp          ; allocate digit
         inc cl              ; count bytes
         add rdx, '0'        ; to ascii
         mov byte [rsp], dl  ; store
@@ -144,7 +144,7 @@ macro S64_10_TOA_ST reg*
         jnz .digit
     test r10b,r10b
     jns .no_sign
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], '-'
     .no_sign:
     mov rsi, rsp
@@ -162,17 +162,16 @@ macro S32_10_TOA_ST reg*
     xor r10b, r10b
     push rbx
     mov rbx, rsp
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], 0
     test eax, eax
     jns .digit
-    not eax ; 2th complement
-    inc eax ;
+    neg eax
     inc cl
     dec r10b ; set sign
     .digit:
         div r11w
-        sub rsp, 1          ; allocate digit
+        dec rsp          ; allocate digit
         inc cl              ; count bytes
         add edx, '0'        ; to ascii
         mov byte [rsp], dl  ; store
@@ -181,7 +180,7 @@ macro S32_10_TOA_ST reg*
         jnz .digit
     test r10b,r10b
     jns .no_sign
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], '-'
     .no_sign:
     mov rsi, rsp
@@ -199,17 +198,16 @@ macro S16_10_TOA_ST reg*
     xor r10b, r10b
     push rbx
     mov rbx, rsp
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], 0
     test ax, ax
     jns .digit
-    not ax ; 2th complement
-    inc ax ;
+    neg ax
     inc cl
     dec r10b ; set sign
     .digit:
         div r11w
-        sub rsp, 1          ; allocate digit
+        dec rsp          ; allocate digit
         inc cl              ; count bytes
         add dx, '0'         ; to ascii
         mov byte [rsp], dl  ; store
@@ -218,7 +216,7 @@ macro S16_10_TOA_ST reg*
         jnz .digit
     test r10b,r10b
     jns .no_sign
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], '-'
     .no_sign:
     mov rsi, rsp
@@ -229,23 +227,22 @@ macro S16_10_TOA_ST reg*
 macro S8_10_TOA_ST reg*
  {
  local .digit, .no_sign
-    mov al, reg
+    movzx eax, reg
     xor rcx, rcx
     mov r11b, 10
     xor r10b, r10b
     push rbx
     mov rbx, rsp
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], 0
     test al, al
     jns .digit
-    not al ; 2th complement
-    inc al ;
+    neg al
     inc cl
     dec r10b ; set sign
     .digit:
         div r11b
-        sub rsp, 1          ; allocate digit
+        dec rsp          ; allocate digit
         inc cl              ; count bytes
         add ah, '0'         ; to ascii
         mov byte [rsp], ah  ; store
@@ -254,7 +251,7 @@ macro S8_10_TOA_ST reg*
         jnz .digit
     test r10b,r10b
     jns .no_sign
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], '-'
     .no_sign:
     mov rsi, rsp
@@ -271,17 +268,16 @@ macro S_10_TOA_ST reg*
     xor r10b, r10b
     push rbx
     mov rbx, rsp
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], 0
     test al, al
     jns .digit
-    not al ; 2th complement TODO: neg
-    inc al ;
+    neg al
     inc cl
     dec r10b ; set sign
     .digit:
         div r11b
-        sub rsp, 1          ; allocate digit
+        dec rsp          ; allocate digit
         inc cl              ; count bytes
         add ah, '0'         ; to ascii
         mov byte [rsp], ah  ; store
@@ -290,7 +286,7 @@ macro S_10_TOA_ST reg*
         jnz .digit
     test r10b,r10b
     jns .no_sign
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], '-'
     .no_sign:
     mov rsi, rsp
@@ -311,26 +307,26 @@ macro S64_BASE_TOA_ST reg*, base:10
     xor r10b, r10b
     push rbx
     mov rbx, rsp
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], 0
     test rax, rax
     jns .digit
-    not rax ; 2th complement
-    inc rax ;
+    neg rax
     inc rcx
     dec r10b ; set sign
+    lea r9, [.S]
     .digit:
         div r11
-        sub rsp, 1          ; allocate digit
+        dec rsp          ; allocate digit
         inc rcx             ; count bytes
-        mov dl, [.S + rdx]  ; to ascii
+        mov dl, [r9 + rdx]  ; to ascii
         mov byte [rsp], dl  ; store
         xor edx, edx
         test eax, eax
         jnz .digit
     test r10b,r10b
     jns .no_sign
-    sub rsp, 1
+    dec rsp
     mov byte [rsp], '-'
     .no_sign:
     mov rsi, rsp
