@@ -59,7 +59,7 @@ macro U64_10_TOA_ST reg*
 macro U8_10_TOA_ST reg*
  {
  local .digit
-    mov al, reg
+    movzx ax, reg
     xor rcx, rcx
     mov r11b, 10
     push rbx
@@ -79,7 +79,7 @@ macro U8_10_TOA_ST reg*
     ALIGN_STACK
  }
 
- macro U64_BASE_TOA_ST reg*, base:10
+macro U64_BASE_TOA_ST reg*, base:10
  {
  local .digit, .S
     jmp @f
