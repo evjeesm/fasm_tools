@@ -155,16 +155,16 @@ macro FMT [fmt]
  {
  common
     local parse, last_val, type, sign
-    define S 0
-    define D 1
-    define X 2
+    define %S 0
+    define %D 1
+    define %X 2
     macro parse type*, val*, sign*
     \{
-        if type = S
+        if type = %S
             DISP_STR val
-        else if type = D
+        else if type = %D
             DISP_DEC val, sign
-        else if type = X
+        else if type = %X
             DISP_HEX val, sign
         end if
         if sign = SIGNED
@@ -179,9 +179,9 @@ macro FMT [fmt]
         if ~ \`val in <'+'> ; not +
             if val eqtype '' ; text
                 display val
-            else if val in <S,D,X>
+            else if val in <%S,%D,%X>
                 type = val
-            else if val eq NL
+            else if val eq %NL
                 display 10
             else
               if val eq .
@@ -195,5 +195,5 @@ macro FMT [fmt]
         end if
         \\}
     \}
-    restore S, D, X
+    restore %S, %D, %X
  }
