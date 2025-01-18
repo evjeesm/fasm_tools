@@ -1,3 +1,6 @@
+X64_REGS equ rax,rbx,rdx,rcx,rsi,rdi,rsp,rbp,\
+             r8,r9,r10,r11,r12,r13,r14,r15
+
 X32_REGS equ eax,ebx,edx,ecx,esi,edi,esp,ebp,\
              r8d,r9d,r10d,r11d,r12d,r13d,r14d,r15d
 
@@ -12,7 +15,7 @@ ascii_digits:: db "0123456789ABCDEFGHIGKLMNOPQRSTUVWXYZ"
 end virtual
 
 
-macro ITOA dest*, src*, bits:64, base:10, signed:0
+macro ITOA dest*, src*, bits:64, base:10, signed:0, case:case@LOWER
  {
  assert bits >= 1 & bits <= 64 ; bit range exceeded
  assert base <= 36             ; max allowed base exceeded
@@ -23,6 +26,9 @@ macro ITOA dest*, src*, bits:64, base:10, signed:0
  repeat base
  local _ascii_
     load _ascii_ byte from ascii_digits:%-1
+    if _ascii_ > '9' & case eq case@LOWER
+        _ascii_ = _ascii_ + 32
+    end if
     db _ascii_
  end repeat
  @@:
@@ -32,7 +38,21 @@ macro ITOA dest*, src*, bits:64, base:10, signed:0
  else if src in <X16_REGS,X8_REGS>
     movzx eax, src
  else ; dereference
-    match [loc], src \{ mov rax, [loc] \}
+    repeat 1
+    match [loc], src
+    \{
+        mov rax, [loc]
+    break
+    \}
+    if ~ src eqtype rax   \; is not a register
+     & ~ src relativeto 0 \; is not numeric const
+     & defined src         ; is defined symbol
+        display "defined!"
+        lea rax, [src]
+    else
+        mov rax, src
+    end if
+    end repeat
  end if
     xor rcx, rcx
  if signed = 1
@@ -95,8 +115,14 @@ macro ITOA_ST src*, bits:64, base:10, signed:0
  else if src in <X16_REGS,X8_REGS>
     movzx eax, src
  else ; dereference
-    match [loc], src \{ mov rax, [loc] \}
- end if
+    repeat 1
+    match [loc], src
+    \{
+        lea rax, [loc]
+        break
+    \}
+    mov rax, src
+    end repeat end if
  if signed = 1
     xor r10b, r10b
     bt rax, bits-1
