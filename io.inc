@@ -100,6 +100,7 @@ macro ERROR_INL [bytes*]
     ERROR [.msg], .msg#.size
  }
 
+;; System exit. (OBSOLETE, use SYSCALL)
 macro EXIT code*
  {
     mov rax, EXIT
