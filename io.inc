@@ -21,6 +21,7 @@ STDOUT = 1
 STDERR = 2
 
 ;; Read from file descriptor.
+;; (OBSOLETE use SYSCALL instead)
 ;;
 macro READ fd*, addr*, size*
  {
@@ -32,6 +33,7 @@ macro READ fd*, addr*, size*
  }
 
 ;; Write to file descriptor, without error checks.
+;; (OBSOLETE use SYSCALL instead)
 ;;
 macro WRITE fd*, addr*, size*
  {
@@ -43,6 +45,7 @@ macro WRITE fd*, addr*, size*
  }
 
 ;; Write with error checks.
+;; (OBSOLETE use 'full_write' function)
 ;;
 macro FULL_WRITE fd*, addr*, size*
  {
