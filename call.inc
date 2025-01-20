@@ -3,11 +3,10 @@ macro SYSCALL [args*]
 common
   local register, reg_c
 common
-    reg_c = 8
+    reg_c = 7
     register equ r9
     register equ r8
     register equ r10
-    register equ rcx
     register equ rdx
     register equ rsi
     register equ rdi
