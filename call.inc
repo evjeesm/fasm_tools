@@ -22,10 +22,16 @@ forward
       \}
       match val, args
       \{
-        if ~ register eq val
-            mov register, val
-        else if val = 0
-            xor register, register
+        if val eqtype register    ;; Is a reg
+            if ~ val eq register  ;; Is different to arg reg
+                mov register, val
+            end if
+        else
+            if val <> 0           ;; non zero
+                mov register, val
+            else                  ;; zero
+                xor register, register
+            end if
         end if
       \}
     end repeat
@@ -64,10 +70,16 @@ forward
       \}
       match val, args
       \{
-        if ~ register eq val
-            mov register, val
-        else if val = 0
-            xor register, register
+        if val eqtype register    ;; Is a reg
+            if ~ val eq register  ;; Is different to arg reg
+                mov register, val
+            end if
+        else
+            if val <> 0           ;; non zero
+                mov register, val
+            else                  ;; zero
+                xor register, register
+            end if
         end if
       \}
     end repeat
