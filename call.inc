@@ -1,16 +1,15 @@
-macro SYSCALL [args*]
+macro SYSCALL nr, [args*]
  {
 common
   local register, reg_c
 common
-    reg_c = 7
+    reg_c = 6
     register equ r9
     register equ r8
     register equ r10
     register equ rdx
     register equ rsi
     register equ rdi
-    register equ rax
 forward
   if reg_c
     repeat 1
@@ -25,6 +24,8 @@ forward
       \{
         if ~ register eq val
             mov register, val
+        else if val = 0
+            xor register, register
         end if
       \}
     end repeat
@@ -32,6 +33,7 @@ forward
     reg_c = reg_c - 1
   end if
 common
+    mov rax, nr
     syscall
  }
 
@@ -64,6 +66,8 @@ forward
       \{
         if ~ register eq val
             mov register, val
+        else if val = 0
+            xor register, register
         end if
       \}
     end repeat
