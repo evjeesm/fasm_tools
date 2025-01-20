@@ -3,8 +3,12 @@ include 'ucontext.inc'
 RT_SIGACTION = 13         ; modern sigaction syscall
 SIGACTION = RT_SIGACTION  ; alias
 
-RT_SIGPROCMASK = 14          ; syscall, access or change signal mask of a process.
+RT_SIGPROCMASK = 14       ; syscall, access or change signal mask of a process.
 SIGPROCMASK = RT_SIGPROCMASK ; alias
+
+SIG_BLOCK   = 0           ; Block signals.
+SIG_UNBLOCK = 1           ; Unblock signals.
+SIG_SETMASK = 2           ; Set the set of blocked signals.
 
 RT_SIGRETURN = 15         ;
 SIGRETURN = RT_SIGRETURN  ; alias
