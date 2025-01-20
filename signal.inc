@@ -1,4 +1,4 @@
-include 'ucontext.inc'
+file$signal.inc equ 1
 
 RT_SIGACTION = 13         ; modern sigaction syscall
 SIGACTION = RT_SIGACTION  ; alias
@@ -12,7 +12,10 @@ SIG_SETMASK = 2           ; Set the set of blocked signals.
 
 RT_SIGRETURN = 15         ;
 SIGRETURN = RT_SIGRETURN  ; alias
-SIGSET_SIZE = 128         ; size of the sigset on x86_64
+
+SIGSET_RESERVED = 128
+SIGSET_SIZE = 8 ; (128)   ; libc reserved 128 bits for that purpose, whereas only 8 are relevant.
+                          ; size of the sigset on x86_64
                           ; (including real time signals)
 
 POSIX_RTSIG_MAX = 8 ; from limits.h:
@@ -81,35 +84,17 @@ SIGWINCH = 28 ; Window size change (4.3 BSD, Sun).
 
 SIGPWR = 30 ; Power failure imminent.
 
-struc SIGACTION_T
+struc SIGSET_T
  {
-  common
-.sa_sigaction   dq ?
-.sa_flags       dd ?
-._pad           dd ?
-.sa_restorer    dq ?
-.sa_mask    SIGSET_T
-.size = $ - .sa_sigaction
+. rb SIGSET_SIZE
  }
 
-macro SIGACTION signal*, act*, oact:0
+struc SIGACTION_T
  {
-  common
-    mov rax, SIGACTION
-    mov rdi, signal
-
-    if ~ act eq 0
-        lea rsi, [act]
-    else
-        xor rsi, rsi
-    end if
-
-    if ~ oact eq 0
-        lea rdx, [oact]
-    else
-        xor rdx, rdx
-    end if
-
-    mov r10, POSIX_RTSIG_MAX
-    syscall
+.sa_sigaction   rq 1
+.sa_flags       rd 1
+._pad           rd 1
+.sa_restorer    rq 1
+.sa_mask    SIGSET_T
+.size = $ - .sa_sigaction
  }

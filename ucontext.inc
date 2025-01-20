@@ -1,3 +1,7 @@
+if ~ file$signal.inc eq 1
+    err ;; Requires signal.inc
+end if
+
 ; Register indices
 REG_R8      =  0
 REG_R9      =  1
@@ -77,11 +81,6 @@ struc MCONTEXT_T
 .reserved    rq 8
  }
 
-struc SIGSET_T
- {
-. rb SIGSET_SIZE
- }
-
 struc UCONTEXT_T
  {
 .uc_flags    rq 1
@@ -89,7 +88,7 @@ struc UCONTEXT_T
 .uc_stack    STACK_T
 .uc_mcontext MCONTEXT_T
 .uc_sigmask  SIGSET_T
-
+._pad rb (SIGSET_RESERVED - SIGSET_SIZE)
 ._fp_regs    FPSTATE_T
 ._ssp        rq 4
  }
