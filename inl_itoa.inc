@@ -41,14 +41,14 @@ macro ITOA dest*, src*, bits:64, base:10, signed:0, case:case@LOWER
     repeat 1
     match [loc], src
     \{
-        mov rax, [loc]
+        mov rax, qword [loc]
     break
     \}
     if ~ src eqtype rax   \; is not a register
      & ~ src relativeto 0 \; is not numeric const
      & defined src         ; is defined symbol
         display "defined!"
-        lea rax, [src]
+        lea rax, qword [src]
     else
         mov rax, src
     end if
@@ -122,7 +122,8 @@ macro ITOA_ST src*, bits:64, base:10, signed:0
         break
     \}
     mov rax, src
-    end repeat end if
+    end repeat
+ end if
  if signed = 1
     xor r10b, r10b
     bt rax, bits-1
