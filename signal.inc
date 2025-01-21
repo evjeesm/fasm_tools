@@ -1,7 +1,5 @@
-file$signal.inc equ 1
-
 RT_SIGACTION = 13         ; modern sigaction syscall
-SIGACTION = RT_SIGACTION  ; alias
+SIGACTION equ RT_SIGACTION  ; alias
 
 RT_SIGPROCMASK = 14       ; syscall, access or change signal mask of a process.
 SIGPROCMASK = RT_SIGPROCMASK ; alias
@@ -11,7 +9,7 @@ SIG_UNBLOCK = 1           ; Unblock signals.
 SIG_SETMASK = 2           ; Set the set of blocked signals.
 
 RT_SIGRETURN = 15         ;
-SIGRETURN = RT_SIGRETURN  ; alias
+SIGRETURN equ RT_SIGRETURN  ; alias
 
 SIGSET_RESERVED = 128
 SIGSET_SIZE = 8 ; (128)   ; libc reserved 128 bits for that purpose, whereas only 8 are relevant.
@@ -54,9 +52,9 @@ SIGPIPE = 13     ; Broken pipe.
 SIGALRM = 14     ; Alarm clock.
 
 ; Archaic names for compatibility.
-SIGIO   = SIGPOLL ; I/O now possible (4.2 BSD).
-SIGIOT  = SIGABRT ; IOT instruction, abort() on a PDP-11.
-SIGCLD  = SIGCHLD ; Old System V name
+SIGIO  equ SIGPOLL ; I/O now possible (4.2 BSD).
+SIGIOT equ SIGABRT ; IOT instruction, abort() on a PDP-11.
+SIGCLD equ SIGCHLD ; Old System V name
 
 ; Historical signals specified by POSIX.
 SIGBUS  =  7      ; Bus error.

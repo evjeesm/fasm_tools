@@ -1,6 +1,4 @@
-if ~ file$signal.inc eq 1
-    err ;; Requires signal.inc
-end if
+include 'signal.inc'
 
 ; Register indices
 REG_R8      =  0
