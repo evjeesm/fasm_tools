@@ -1,16 +1,26 @@
-; rax
+;;;
+;  SYSCALLs:
+;  mmap (addr:ptr, length:size,
+;        prot:int, flags:int,
+;        fd:int, offset:size ) -> ptr;
+;
+;  munmap (addr:ptr, length: size) -> int;
+;;;
+
+; syscall -> rax
 MMAP = 9
 MUNMAP = 11
 
+MMAP_SUCCESS = 0
 MMAP_FAILED = -1
 
-; edx
+; prot -> edx
 PROT_0 = 0x00
 PROT_R = 0x01
 PROT_W = 0x02
 PROT_X = 0x04
 
-; r10d
+; flags -> r10d
 MAP_FIXED    = 0x0010
 MAP_SHARED   = 0x0001
 MAP_PRIVATE  = 0x0002
