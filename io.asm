@@ -6,14 +6,14 @@ include 'call.inc'
 
 section '.text' executable
     public write
-    public full_write
+    public write_all
 
 ;; Write without error checks.
 write:
     SYSCALL WRITE, rdi, [rsi], rdx
     ret
 
-full_write:
+write_all:
 .again:
     mov rax, WRITE
     syscall

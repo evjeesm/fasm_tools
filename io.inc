@@ -45,9 +45,9 @@ macro WRITE fd*, addr*, size*
  }
 
 ;; Write with error checks.
-;; (OBSOLETE use 'full_write' function)
+;; (OBSOLETE use 'write_all' function)
 ;;
-macro FULL_WRITE fd*, addr*, size*
+macro WRITE_ALL fd*, addr*, size*
  {
   local .again, .error, .exit
     mov rdi, fd
