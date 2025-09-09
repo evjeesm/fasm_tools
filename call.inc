@@ -1,4 +1,4 @@
-macro SYSCALL nr, [args*]
+macro SYSCALL nr, [args]
  {
 common
   local register, reg_c
@@ -13,6 +13,11 @@ common
 forward
   if reg_c
     repeat 1
+      match *[loc], args
+      \{
+        mov register, [loc]
+      break
+      \}
       match [loc], args
       \{
         if ~ register eq loc
@@ -43,7 +48,7 @@ common
     syscall
  }
 
-macro CCALL func*, [args*]
+macro CCALL func*, [args]
  {
 common
   local register, reg_c, count
@@ -61,6 +66,11 @@ common
 forward
   if reg_c
     repeat 1
+      match *[loc], args
+      \{
+        mov register, [loc]
+      break
+      \}
       match [loc], args
       \{
         if ~ register eq loc
