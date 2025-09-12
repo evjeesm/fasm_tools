@@ -32,7 +32,9 @@ macro READ_BITS src, bits
 
 macro ITOA_SET_DEST_AND_SRC dest, src, bits
  {
+  if ~ dest eq rdi
     lea rdi, dest ; setup destination
+  end if
   if src in <X32_REGS>
     mov eax, src
   else if src in <X16_REGS,X8_REGS>
