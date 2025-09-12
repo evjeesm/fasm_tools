@@ -1,15 +1,43 @@
 include 'comptime.inc'
 
-macro TO_STR dest,src { ITOA dest,src,64,10,0,LOWER }
+;; Enum for the sign
+;; [TODO] use IOTA
+_SIGN_EQ = 0
+_SIGN_NE = 1
+_SIGN_GT = 2
+_SIGN_LT = 3
+_SIGN_GE = 4
+_SIGN_LE = 5
 
-macro STORE_ARG dest, arg
+ASSERT_ARG_LEN = 64
+ASSERT_STR_LEN = 1024
+
+ASSERT_COLOR_FG_RED equ "[31m"
+ASSERT_COLOR_NONE equ "[0m"
+
+;; macro TO_STR dest,src { ITOA dest,src,64,10,0,LOWER }
+
+;;
+;; Bake hardcoded text of the arg in 'assert_arg'
+;; then copy into an 'assert_str'
+;; 
+macro ASSERT_STR_ARG arg
  {
- local ..text
+ local ..text, n, d, dest
   virtual at 0
     ..text:: db `arg
     ..text_len = $
   end virtual
-  local n,d
+  if ..text_len > ASSERT_ARG_LEN
+
+      display \
+        ASSERT_COLOR_FG_RED, \
+        "ASSERT ERROR: Argument doesn't fit into a buffer", \
+        ASSERT_COLOR_NONE
+
+      err
+  end if
+  dest = assert_arg
   n = 0
   d = 4
   while n < ..text_len
@@ -32,102 +60,79 @@ macro STORE_ARG dest, arg
     end repeat
     d = d / 2
   end while
+  CCALL assert_str_build, [assert_arg], ..text_len
  }
 
 ;; OPS: EQ, NE, GT, LT, LE, GE
-macro _ASSERT_ bufsz, reg_1, reg_2, _test, _op, value, expected, msg
+macro _ASSERT _test_, op, value, expected, msg
  {
-  DEBUG
-  local .ok
+ DEBUG
+ local .ok
     pushfq
-    push reg_1
-    push reg_2
+    push rax ;; [NOTE] push dont work on 32 and 8 bit regs
+    push r10
 
-    mov reg_1, value
-    mov reg_2, expected
+    mov rax, value
+    mov r10, expected
 
-    _test reg_1, reg_2
+    _test_ rax, r10
 
-  match =EQ, _op \{ je  .ok \}
-  match =NE, _op \{ jne .ok \}
+ match =_SIGN_EQ, op \{ je  .ok \}
+ match =_SIGN_NE, op \{ jne .ok \}
+ match =_SIGN_GT, op \{ jg  .ok \}
+ match =_SIGN_LT, op \{ jl  .ok \}
+ match =_SIGN_GE, op \{ jge .ok \}
+ match =_SIGN_LE, op \{ jle .ok \}
 
-    sub rsp, (bufsz+8)*2 ; allocate string buffers
-    STORE_ARG assert_expected, expected
-    STORE_ARG assert_value, value
-
-    TO_STR [rsp+8], rax
-    mov [rsp], rdx
-
-    TO_STR [rsp+(bufsz+8)+8], r10
-    mov [rsp+(bufsz+8)], rdx
-
-    ;; ERROR [assert_m], assert_m_len
     CCALL assert_str_begin
+    CCALL assert_str_build, [assert_red], assert_red_len
     CCALL assert_str_build, [assert_m], assert_m_len
+    CCALL assert_str_build, [assert_clear], assert_clear_len
 
-    ;; ERROR [assert_value], 32
-    CCALL assert_str_build, [assert_value], 32
+    ASSERT_STR_ARG value
 
-  ;; match =EQ, _op \{ ERROR [assert_eq], assert_eq_len \}
-  ;; match =NE, _op \{ ERROR [assert_ne], assert_ne_len \}
-  match =EQ, _op \{ CCALL assert_str_build, [assert_eq], assert_eq_len \}
-  match =NE, _op \{ CCALL assert_str_build, [assert_ne], assert_ne_len \}
+    CCALL assert_str_sign, op
+    ASSERT_STR_ARG expected
 
-    ;; ERROR [assert_expected], 32
-    CCALL assert_str_build, [assert_expected], 32
-
-    ;; ERROR [assert_comma], 2
     CCALL assert_str_build, [assert_comma], 2
-    ;; ERROR [assert_obr], 1
     CCALL assert_str_build, [assert_obr], 1
+    CCALL assert_str_parse, rax
 
-    ;; ERROR [rsp+8], [rsp]
-    ;; mov rsi, [rsp]
-    CCALL assert_str_build, [rsp+8], *[rsp]
-
-  ;; match =EQ, _op \{ ERROR [assert_eq], assert_eq_len \}
-  ;; match =NE, _op \{ ERROR [assert_ne], assert_ne_len \}
-  match =EQ, _op \{ CCALL assert_str_build, [assert_eq], assert_eq_len \}
-  match =NE, _op \{ CCALL assert_str_build, [assert_ne], assert_ne_len \}
-
-    ;; ERROR [rsp+(bufsz+8)+8], [rsp+(bufsz+8)]
-
-    ;; mov rsi, [rsp+(bufsz+8)]
-    CCALL assert_str_build, [rsp+(bufsz+8)+8], *[rsp+(bufsz+8)]
-
-    ;; ERROR [assert_cbr], 1
+    CCALL assert_str_sign, op
+    CCALL assert_str_parse, r10
     CCALL assert_str_build, [assert_cbr], 1
-
-    ;; ERROR [assert_space], 1
     CCALL assert_str_build, [assert_space], 1
 
-    ;; ERROR_INL msg
+    CCALL assert_str_build, [assert_red], assert_red_len
+    ASSERT_STR_ARG msg
+    CCALL assert_str_build, [assert_clear], assert_clear_len
     ERROR [assert_str], [assert_str_index]
 
-    add rsp, (bufsz+8)*2 ; restore stack
     SYSCALL EXIT, -1
 .ok:
-    pop reg_2
-    pop reg_1
+    pop r10
+    pop rax
     popfq
   END_DEBUG
  }
 
-macro _ASSERT_64 [...]   ;; _test, _op, value, expected, msg
+
+macro _GEN_ASSERTS [args*]
  {
  common
-    _ASSERT_ 16, rax, r10, ...
+ irp arg, args \{
+  macro ASSERT_\#arg ...& \\{
+  common
+     _ASSERT cmp, _SIGN_\\#arg, ...
+ \\}
+ \}
  }
-
-macro ASSERT_EQ value, expected, msg
- {
-    _ASSERT_64 cmp, EQ, value, expected, msg
- }
-
-macro ASSERT_NE value, expected, msg
- {
-    _ASSERT_64 cmp, NE, value, expected, msg
- }
+;; macro ASSERT_EQ [...]
+;;  {
+;;  common
+;;     _ASSERT_ cmp, _SIGN_EQ, ...
+;;  }
+_GEN_ASSERTS EQ, NE, GT, LT, GE, LE
 
 postpone
  {
@@ -169,40 +174,89 @@ assert_str_build:
     add [assert_str_index], r8
     ret
 
+;;
+;; rdi - src,
+assert_str_parse:
+    mov rsi, rdi
+    lea rdi, [assert_str]
+    mov rax, [assert_str_index]
+    add rdi, rax
+
+    ;; maybe replace in the future
+    ;; or wrap as routine
+    ITOA rdi, rsi, 64, 10, 0, LOWER
+
+    add [assert_str_index], rdx
+    mov rax, [assert_str_index]
+    ret
+
+;;
+;;
+;; rdi - enum of the sign
+assert_str_sign:
+    jmp @f
+.signs:
+    dq assert_eq
+    dq assert_ne
+    dq assert_gt
+    dq assert_lt
+    dq assert_ge
+    dq assert_le
+.signs.sizes:
+    db assert_eq_len
+    db assert_ne_len
+    db assert_gt_len
+    db assert_lt_len
+    db assert_ge_len
+    db assert_le_len
+@@:
+
+    movzx rsi, byte [rdi + .signs.sizes]
+    lea edi, [.signs+(rdi*8)]
+    mov rdi, [dword edi]
+
+    CCALL assert_str_build, rdi, rsi
+    ret
+
   segment readable
- assert_m db "[ASSERT] "
- assert_m_len = $ - assert_m
+    assert_red db ASSERT_COLOR_FG_RED
+    assert_red_len = $ - assert_red
 
- assert_eq db " == "
- assert_eq_len = $ - assert_eq
+    assert_clear db ASSERT_COLOR_NONE
+    assert_clear_len = $ - assert_clear
 
- assert_ne db " != "
- assert_ne_len = $ - assert_ne
+    assert_m db "[ASSERT] "
+    assert_m_len = $ - assert_m
 
- assert_gt db " > "
- assert_gt_len = $ - assert_gt
+    assert_eq db " == "
+    assert_eq_len = $ - assert_eq
 
- assert_lt db " < "
- assert_lt_len = $ - assert_lt
+    assert_ne db " != "
+    assert_ne_len = $ - assert_ne
 
- assert_ge db " >= "
- assert_ge_len = $ - assert_ge
+    assert_gt db " > "
+    assert_gt_len = $ - assert_gt
 
- assert_le db " <= "
- assert_le_len = $ - assert_le
+    assert_lt db " < "
+    assert_lt_len = $ - assert_lt
 
- assert_comma db ","
- assert_space db " "
+    assert_ge db " >= "
+    assert_ge_len = $ - assert_ge
 
- assert_obr db "("
- assert_cbr db ")"
+    assert_le db " <= "
+    assert_le_len = $ - assert_le
+
+    assert_comma db ","
+    assert_space db " "
+
+    assert_obr db "("
+    assert_cbr db ")"
 
   segment readable writable
- assert_expected rb 32
- assert_value rb 32
+    assert_arg rb ASSERT_ARG_LEN
 
- assert_str_index dq 0
- assert_str rb 1024
+    assert_str_index dq 0
+    assert_str rb ASSERT_STR_LEN
 END_DEBUG
  }
 
