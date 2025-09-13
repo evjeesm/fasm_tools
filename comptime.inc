@@ -15,6 +15,7 @@ macro END_DEBUG { end if } ; _RELEASE = 0
 FASM_MAX_INT equ 0xffff_ffff_ffff_ffff
 SIGNED equ 1
 UNSIGNED equ 0
+PRECISION equ 3
 
 macro DISP_STR var*
  {
@@ -91,7 +92,7 @@ macro DISP_HEX num*, sign:UNSIGNED
     end while
  }
 
-macro DISP_DOUBLE num*, precision:3
+macro DISP_DOUBLE num*, precision:PRECISION
  {
     local bitlen,explen,mantisalen,expmask,expbias,mantisamask
     local sign,exp,actual_exp,norm_mantisa,i,mask
@@ -152,10 +153,12 @@ macro DISP_DOUBLE num*, precision:3
 macro FMT [fmt]
  {
  common
-    local parse, last_val, type, sign
+    local parse, last_val, type, sign, precision
     define %S 0
     define %D 1
     define %X 2
+    define %F 3
+    define %P 4
     macro parse type*, val*, sign*
     \{
         if type = %S
@@ -164,6 +167,14 @@ macro FMT [fmt]
             DISP_DEC val, sign
         else if type = %X
             DISP_HEX val, sign
+        else if type = %F
+            if defined precision
+                DISP_DOUBLE val, precision
+            else
+                DISP_DOUBLE val
+            end if
+        else if type = %P
+            precision = val
         end if
         if sign = SIGNED
             sign = UNSIGNED
@@ -177,7 +188,7 @@ macro FMT [fmt]
         if ~ \`val in <'+'> ; not +
             if val eqtype '' ; text
                 display val
-            else if val in <%S,%D,%X>
+            else if val in <%S,%D,%X,%F,%P>
                 type = val
             else if val eq %NL
                 display 10
@@ -193,5 +204,5 @@ macro FMT [fmt]
         end if
         \\}
     \}
-    restore %S, %D, %X
+    restore %S, %D, %X, %F, %P
  }
