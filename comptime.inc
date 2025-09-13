@@ -1,18 +1,16 @@
+;; Parse compilation target
+if ~ defined RELEASE
+  _RELEASE=0 ;; default -> debug mode
+else
+  _RELEASE=RELEASE
+end if
 
 ; Mark code block as debug block
 ; that can be excluded from release build.
 ; Debug mode is default.
 ; To compile in release mode: fasm -d RELEASE=1 code.asm
-
-macro DEBUG
- {
- if ~ defined RELEASE
- }
-
-macro END_DEBUG
- {
- end if ; ~ RELEASE
- }
+macro DEBUG { if _RELEASE = 0 }
+macro END_DEBUG { end if } ; _RELEASE = 0
 
 FASM_MAX_INT equ 0xffff_ffff_ffff_ffff
 SIGNED equ 1
