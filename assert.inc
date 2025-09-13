@@ -25,7 +25,11 @@ macro ASSERT_STR_ARG arg
  {
  local ..text, n, d, dest
   virtual at 0
-    ..text:: db `arg
+    ..text:: irps a, arg \{
+      ;; capturing down whole expression
+      ;; (negative literal case)
+      db \`a
+    \}
     ..text_len = $
   end virtual
   if ..text_len > ASSERT_ARG_LEN
