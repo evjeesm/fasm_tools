@@ -119,7 +119,7 @@ macro DISP_DEC num*, sign:UNSIGNED
   local orig,n,dv,dg
   orig = (num) and FASM_MAX_INT
   if sign = 1
-    if orig <> 0 & (bsr orig) = 63
+    if orig <> 0 & (bsr orig) = (_BIT_LEN - 1)
       display '-'
       orig = not orig and FASM_MAX_INT + 1
     end if
@@ -130,7 +130,7 @@ macro DISP_DEC num*, sign:UNSIGNED
     display '0'
   else
     while n > 0
-      if (dv > 1 shl 63)
+      if (dv > 1 shl (_BIT_LEN - 1))
         display '1'
       else
         dv = dv*10
