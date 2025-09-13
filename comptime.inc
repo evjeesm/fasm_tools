@@ -55,7 +55,7 @@ macro FMT [fmt*]
     else if type = %U
       DISP_DEC _val, UNSIGNED
     else if type = %X
-      DISP_HEX _val, UNSIGNED
+      DISP_HEX _val
     else if type = %F
       if defined precision
         DISP_DOUBLE _val, precision
@@ -146,16 +146,10 @@ macro DISP_DEC num*, sign:UNSIGNED
   end if
  }
 
-macro DISP_HEX num*, sign:UNSIGNED
+macro DISP_HEX num*
  {
   local n,nib,i,shft,d
   n = (num) and FASM_MAX_INT
-  if sign = 1
-    if n <> 0 & (bsr n) = 63
-      display '-'
-      n = not n and FASM_MAX_INT + 1
-    end if
-  end if
   display '0x'
   if n <> 0
     bit = bsr n
@@ -186,7 +180,7 @@ macro DISP_DOUBLE num*, precision:PRECISION
  {
   local n,mantisa,sign,exp,actual_exp
 
-  n = num
+  n = (num)
   sign = (n shr (_BIT_LEN - 1)) and 0x1
   exp = n shr _MANTISA_LEN and _EXP_MASK
   actual_exp = exp - _EXP_BIAS
@@ -201,7 +195,7 @@ macro DISP_DOUBLE num*, precision:PRECISION
       display '-'
     end if
     ; handle extreme exponents with scientific notation
-    if (actual_exp > 52) | (actual_exp < -52)
+    if (actual_exp > _MANTISA_LEN) | (actual_exp < -_MANTISA_LEN)
       _DOUBLE_SCIENTIFIC_NOTATION actual_exp, mantisa, precision
     else
       _DOUBLE_FLOATING_POINT_NOTATION actual_exp, mantisa, precision
