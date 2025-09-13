@@ -92,66 +92,99 @@ macro DISP_HEX num*, sign:UNSIGNED
   end while
  }
 
+_MANTISA_LEN = 52
+_MANTISA_MASK = (1 shl _MANTISA_LEN) - 1
+_EXP_BIAS = 1023
+_EXP_LEN = 11
+_EXP_MASK = (1 shl _EXP_LEN) - 1
+_BIT_LEN = 64
+
 macro DISP_DOUBLE num*, precision:PRECISION
  {
-  local n,bitlen,explen,mantisalen,expmask,expbias,mantisamask
-  local sign,exp,actual_exp,norm_mantisa,i,mask
-  local integer_part,fractional_part
+  local n,mantisa,sign,exp,actual_exp
 
-  bitlen = 64
-  explen = 11
-  expbias = 1023
-  mantisalen = 52
   n = num
+  sign = (n shr (_BIT_LEN - 1)) and 0x1
+  exp = n shr _MANTISA_LEN and _EXP_MASK
+  actual_exp = exp - _EXP_BIAS
+  mantisa = n and (_MANTISA_MASK)
 
-  sign = ((n) shr (bitlen - 1)) and 0x1
-  expmask = (0x1 shl explen) - 1
-  exp = (n) shr mantisalen and expmask
-  actual_exp = exp - expbias
-  mantisamask = (0x1 shl mantisalen) - 1
-  mantisa = (n) and (mantisamask)
-  norm_mantisa = mantisa
-  if exp <> -expbias
-    norm_mantisa = (mantisa or (1 shl mantisalen))
-  end if
-  if (exp = expmask & mantisa = 0)
-    if sign
-      display '-'
-    else
-      display '+'
-    end if
-    display 'inf'
-  else if (exp = expmask & mantisa <> 0)
+  if (exp = _EXP_MASK & mantisa = 0)
+    _DOUBLE_INF sign
+  else if (exp = _EXP_MASK & mantisa <> 0)
     display 'NaN'
   else
     if sign
       display '-'
     end if
-    if actual_exp > 52
-      display '<TOO LARGE>'
-    else if actual_exp < -52
-      display '<TOO SMALL>'
+    ; handle extreme exponents with scientific notation
+    if (actual_exp > 52) | (actual_exp < -52)
+      _DOUBLE_SCIENTIFIC_NOTATION actual_exp, mantisa, precision
     else
-      if actual_exp > 0
-        i = (bsr norm_mantisa) - actual_exp
-        mask = (1 shl i) - 1
-        scaled_mantisa = ((norm_mantisa and mask) shl actual_exp)
-      else
-        scaled_mantisa = norm_mantisa shr -actual_exp
-      end if
-      integer_part = (norm_mantisa shr (mantisalen - actual_exp))
-      fractional_part = scaled_mantisa and (mantisamask)
-      DISP_DEC integer_part
-      display '.'
-      repeat precision
-        fractional_part = fractional_part * 10
-        DISP_DEC (fractional_part shr mantisalen) mod 10
-        fractional_part = fractional_part and mantisamask
-      end repeat
+      _DOUBLE_FLOATING_POINT_NOTATION actual_exp, mantisa, precision
     end if
   end if
+}
+
+macro _DOUBLE_INF sign*
+ {
+  if sign
+    display '-'
+  else
+    display '+'
+  end if
+  display 'inf'
  }
 
+macro _DOUBLE_SCIENTIFIC_NOTATION actual_exp*, mantisa*, precision*
+ {
+  ; normalized mantissa fraction = norm_mantisa / 2^_MANTISA_LEN
+  display '1.'
+  ; print fractional bits of mantissa as decimal
+  fractional_part = mantisa
+  repeat precision
+    fractional_part = fractional_part * 10
+    DISP_DEC (fractional_part shr _MANTISA_LEN) mod 10
+    fractional_part = fractional_part and _MANTISA_MASK
+  end repeat
+
+  display ' * 2^('
+  if actual_exp < 0
+    display '-'
+    DISP_DEC -actual_exp
+  else
+    display '+'
+    DISP_DEC actual_exp
+  end if
+  display ')'
+ }
+
+macro _DOUBLE_FLOATING_POINT_NOTATION actual_exp*, mantisa*, precision*
+ {
+  local scaled_mantisa, integer_part, fractional_part, norm_mantisa
+  norm_mantisa = mantisa
+  if actual_exp <> 0
+    norm_mantisa = (mantisa or (1 shl _MANTISA_LEN))
+  end if
+
+  if actual_exp > 0
+    local i, mask
+    i = (bsr norm_mantisa) - actual_exp
+    mask = (1 shl i) - 1
+    scaled_mantisa = ((norm_mantisa and mask) shl actual_exp)
+  else
+    scaled_mantisa = norm_mantisa shr -actual_exp
+  end if
+  integer_part = (norm_mantisa shr (_MANTISA_LEN - actual_exp))
+  fractional_part = scaled_mantisa and (_MANTISA_MASK)
+  DISP_DEC integer_part
+  display '.'
+  repeat precision
+    fractional_part = fractional_part * 10
+    DISP_DEC (fractional_part shr _MANTISA_LEN) mod 10
+    fractional_part = fractional_part and _MANTISA_MASK
+  end repeat
+ }
 
 macro FMT [fmt]
  {
