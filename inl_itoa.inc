@@ -148,6 +148,7 @@ macro ITOA_ASSERT bits, base, signed, case, term
 ;; Registers in use:
 ;;   rdi - dest
 ;;   rdx - char counter
+;;   ... - rest registers used in ITOA_BODY[_SIGNED]
 macro ITOA dest*, src*, bits:64, base:10, signed:0, case:LOWER, term
  {
     ITOA_ASSERT bits,base,signed,case,term
