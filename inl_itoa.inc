@@ -16,10 +16,12 @@ macro EMBED_ASCII base*, case*
   end repeat
  }
 
+;; Registers in use:
+;;   rax - src
 ;; load memory into rax depending on bits amount
 macro READ_BITS src, bits
  {
-  if      bits <= 8
+  if bits <= 8
     mov al, byte src
   else if bits <= 16
     mov ax, word src
@@ -30,6 +32,9 @@ macro READ_BITS src, bits
   end if
  }
 
+;; Registers in use:
+;;   rax - src
+;;   rdi - dest
 macro ITOA_SET_DEST_AND_SRC dest, src, bits
  {
   if ~ dest eq rdi
@@ -57,6 +62,13 @@ macro ITOA_SET_DEST_AND_SRC dest, src, bits
   end if
  }
 
+;; Registers in use:
+;;   rax - argument
+;;   rdx - mask; remainder of division; ascii char
+;;   rcx - counter; copy string
+;;   r9  - ascii table
+;;   r11 - division operand
+;;   rsi - copy string
 macro ITOA_BODY bits, base
  {
   local .digit, .S
@@ -97,6 +109,11 @@ macro ITOA_BODY bits, base
     add rsp, rdx
  }
 
+;; Registers in use:
+;;   rax - src
+;;   rdi - dest
+;;   rdx - counter
+;;   ... - rest registers used in ITOA_BODY
 macro ITOA_BODY_SIGNED bits, base
  {
     push rax ;; save original number
