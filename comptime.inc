@@ -17,6 +17,89 @@ SIGNED equ 1
 UNSIGNED equ 0
 PRECISION equ 3
 
+;;
+;; Format macro (like printf in C)
+;; Use type symbol to set fomatting strategy for all next arguments.
+;; Type symbols:
+;;  %S - string
+;;  %D - signed integer
+;;  %U - unsigned integer
+;;  %X - hexadecimal (unsigned by default)
+;;  %F - double
+;;  %P - define a precision for the next double fomatting
+;; Dot will be substituted by last argument
+;;  (usefull for printing same thing in different formats)
+macro FMT [fmt*]
+ {
+ common
+  local parse, last_val, type, negative, precision
+  define %S 0 ; string
+  define %D 1 ; signed integer
+  define %U 2 ; unsigned integer
+  define %X 3 ; hexadecimal
+  define %F 4 ; double
+  define %P 5 ; double precision
+  negative = 0
+  macro parse type*, val*
+  \{
+    local _val
+    if negative = 1
+      _val = -val
+    else
+      _val = val
+    end if
+    if type = %S
+      DISP_STR val
+    else if type = %D
+      DISP_DEC _val, SIGNED
+    else if type = %U
+      DISP_DEC _val, UNSIGNED
+    else if type = %X
+      DISP_HEX _val, UNSIGNED
+    else if type = %F
+      if defined precision
+        DISP_DOUBLE _val, precision
+      else
+        DISP_DOUBLE _val
+      end if
+    else if type = %P
+      precision = val
+    end if
+    negative = 0
+    last_val = _val
+  \}
+  irps val, fmt
+  \{
+  rept 1
+  \\{
+  if ~ \`val in <'+','-'> ; not + or -
+    if val eqtype '' ; text
+      display val
+    else if \`val in <'%S','%D','%U','%X','%F','%P'>
+      type = val
+    else if val eq %NL
+      display 10
+    else
+      if val eq .
+        assert defined last_val
+        val = last_val
+      end if
+      parse type, val
+    end if
+  else ; + or -
+    if \`val eq '-'
+      if negative = 1
+        negative = 0
+      else
+        negative = 1
+      end if
+    end if
+  end if
+  \\}
+  \}
+  restore %S, %D, %U, %X, %F, %P
+ }
+
 macro DISP_STR var*
  {
   local s,i
@@ -184,71 +267,4 @@ macro _DOUBLE_FLOATING_POINT_NOTATION actual_exp*, mantisa*, precision*
     DISP_DEC (fractional_part shr _MANTISA_LEN) mod 10
     fractional_part = fractional_part and _MANTISA_MASK
   end repeat
- }
-
-macro FMT [fmt]
- {
- common
-  local parse, last_val, type, negative, precision
-  define %S 0 ; string literal
-  define %D 1 ; signed integer
-  define %U 2 ; unsigned integer
-  define %X 3 ; hexadecimal
-  define %F 4 ; double
-  define %P 5 ; double precision
-  negative = 0
-  macro parse type*, val*
-  \{
-    local _val
-    if negative = 1
-      _val = -val
-    else
-      _val = val
-    end if
-    if type = %S
-      DISP_STR val
-    else if type = %D
-      DISP_DEC _val, SIGNED
-    else if type = %U
-      DISP_DEC _val, UNSIGNED
-    else if type = %X
-      DISP_HEX _val, UNSIGNED
-    else if type = %F
-      if defined precision
-        DISP_DOUBLE _val, precision
-      else
-        DISP_DOUBLE _val
-      end if
-    else if type = %P
-      precision = val
-    end if
-    negative = 0
-    last_val = _val
-  \}
-  irps val, fmt
-  \{
-  rept 1
-  \\{
-  if ~ \`val in <'+','-'> ; not + or -
-    if val eqtype '' ; text
-      display val
-    else if \`val in <'%S','%D','%U','%X','%F','%P'>
-      type = val
-    else if val eq %NL
-      display 10
-    else
-      if val eq .
-        assert defined last_val
-        val = last_val
-      end if
-      parse type, val
-    end if
-  else ; + or -
-    if \`val eq '-'
-      negative = 1
-    end if
-  end if
-  \\}
-  \}
-  restore %S, %D, %U, %X, %F, %P
  }
