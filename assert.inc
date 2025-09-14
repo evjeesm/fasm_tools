@@ -176,28 +176,36 @@ macro _GEN_ASSERTS [args*]
  irp arg, args \{
   macro ASSERT_\#arg ...& \\{
   common
-     _ASSERT cmp, _OP_\\#arg, ...
+     _ASSERT_CMP _OP_\\#arg, ...
  \\}
  \}
  }
+;; Following source will be generated:
 ;; macro ASSERT_EQ [...]
 ;;  {
 ;;  common
-;;     _ASSERT cmp, _OP_EQ, ...
+;;     _ASSERT_CMP _OP_EQ, ...
 ;;  }
 _GEN_ASSERTS EQ, NE, GT, LT, GE, LE
 
-macro ASSERT_ZERO value, msg
+macro _GEN_UNARRY_ASSERTS [args*]
  {
  common
-   _ASSERT_TEST _OP_ZERO, value, msg
+ irp arg, args \{
+  macro ASSERT_\#arg ...& \\{
+  common
+     _ASSERT_TEST _OP_\\#arg, ...
+ \\}
+ \}
  }
+;; Following source will be generated:
+;; macro ASSERT_ZERO value, msg
+;;  {
+;;  common
+;;    _ASSERT_TEST _OP_ZERO, value, msg
+;;  }
+_GEN_UNARRY_ASSERTS ZERO, NOT_ZERO, POSITIVE, NEGATIVE
 
-macro ASSERT_NOT_ZERO value, msg
- {
- common
-   _ASSERT_TEST _OP_NOT_ZERO, value, msg
- }
 
 macro ASSERT_POSITIVE value, msg
  {
