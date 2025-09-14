@@ -207,16 +207,76 @@ macro _GEN_UNARRY_ASSERTS [args*]
 _GEN_UNARRY_ASSERTS ZERO, NOT_ZERO, POSITIVE, NEGATIVE
 
 
-macro ASSERT_POSITIVE value, msg
+macro _ASSERT_RANGE op, value, expected, size, msg
  {
- common
-   _ASSERT_TEST _OP_POSITIVE, value, msg
- }
+ DEBUG
+ local .ok
+    pushfq
+    push rdi ;; [NOTE] push dont work on 32 and 8 bit regs
+    push rsi
+    push rcx
 
-macro ASSERT_NEGATIVE value, msg
- {
- common
-   _ASSERT_TEST _OP_NEGATIVE, value, msg
+    lea rdi, [expected]
+    lea rsi, [value]
+    mov rcx, size
+
+    match =_OP_EQ, op \{
+        repe cmpsb
+        je .ok
+    \}
+    match =_OP_NE, op \{
+        repne cmpsb
+        jne .ok
+    \}
+
+    push rcx ; store mismatch point
+
+    CCALL assert_str_begin
+
+    ; [ASSERT] 
+    CCALL assert_str_build, [assert_red], assert_red_len
+    CCALL assert_str_build, [assert_m], assert_m_len
+    CCALL assert_str_build, [assert_clear], assert_clear_len
+
+    ASSERT_STR_ARG "RANGES MISMATCH "
+    ASSERT_STR_ARG value#' '#expected
+    CCALL assert_str_build, assert_nl, 1
+
+    ;; Print matching part
+    mov rcx, [rsp]
+    sub rcx, size - 1
+    neg rcx
+    CCALL assert_str_build, value, rcx
+
+    ;; Print mismatched char
+    CCALL assert_str_build, assert_red, assert_red_len
+    mov rdi, [rsp]
+    sub rdi, size - 1
+    neg rdi
+    lea rdi, [value + rdi]
+    push rdi
+    inc qword [rsp]
+    CCALL assert_str_build, rdi, 1
+    CCALL assert_str_build, [assert_clear], assert_clear_len
+
+    ;; Print rest
+    mov rcx, [rsp+8]
+    pop rdi
+    CCALL assert_str_build, rdi, rcx
+    CCALL assert_str_build, assert_nl, 1
+
+    ;; Print expected
+    CCALL assert_str_build, expected, size
+
+    ERROR [assert_str], [assert_str_index]
+    pop rcx
+    SYSCALL EXIT, -1
+.ok:
+    pop rcx
+    pop rsi
+    pop rdi
+    popfq
+  END_DEBUG
  }
 
 postpone
@@ -224,28 +284,27 @@ postpone
 DEBUG
   segment readable executable
 
+;; Copy amount of src bytes to dest at specific offset
+;; Args:
 ;; rdi - dest,
 ;; rsi - src,
 ;; rdx - dest offset,
-;; rcx - src size,
-;; r8 ,r9
+;; rcx - src size
 assert_strcpy:
-    ;; push rbp
-    ;; mov rbp, rsp
     add rdi, rdx
     cld
     rep movsb
-
-    ;; pop rbp
     ret
 
+;; Resets assert message string
+;; NOTE: (no need for that, cus assert will exit anyway)
 assert_str_begin:
     mov [assert_str_index], 0
     ret
 
+;; Copy string to assert message buffer advancing the index.
 ;; rdi - src,
 ;; rsi - src_len,
-;; rdx, rcx, r8, r9
 assert_str_build:
     mov rcx, rsi
     mov rsi, rdi
@@ -259,8 +318,9 @@ assert_str_build:
     add [assert_str_index], r8
     ret
 
-;;
-;; rdi - src,
+;; Parse contents of the register as unsigned integer
+;; into the assert message buffer
+;; rdi - src
 assert_str_parse:
     mov rsi, rdi
     lea rdi, [assert_str]
@@ -275,7 +335,8 @@ assert_str_parse:
     mov rax, [assert_str_index]
     ret
 
-;;
+;; Parse contents of the register as signed integer
+;; into the assert message buffer
 ;; rdi - src,
 assert_str_parse_signed:
     mov rsi, rdi
@@ -366,13 +427,13 @@ assert_str_op:
     assert_le db " <= "
     assert_le_len = $ - assert_le
 
-
-
     assert_comma db ","
     assert_space db " "
 
     assert_obr db "("
     assert_cbr db ")"
+
+    assert_nl db 10
 
   segment readable writable
     assert_arg rb ASSERT_ARG_LEN
