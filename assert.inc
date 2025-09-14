@@ -74,7 +74,7 @@ macro ASSERT_STR_ARG arg
  }
 
 ;; OPS: EQ, NE, GT, LT, LE, GE
-macro _ASSERT _test_, op, value, expected, msg
+macro _ASSERT_CMP op, value, expected, msg
  {
  DEBUG
  local .ok
@@ -85,7 +85,7 @@ macro _ASSERT _test_, op, value, expected, msg
     mov rax, value
     mov r10, expected
 
-    _test_ rax, r10
+    cmp rax, r10
 
     match =_OP_EQ, op \{ je  .ok \}
     match =_OP_NE, op \{ jne .ok \}
