@@ -34,6 +34,21 @@ macro STATIC_ASSERT cond*, msg*
   end if
  }
 
+macro ASSERT_LOCATION file*, line*
+ {
+ local ..text, text_len
+  virtual at 0
+    ..text:: db file, "["
+    text_len = $
+  end virtual
+  STATIC_ASSERT text_len <= ASSERT_ARG_LEN, \
+    "Argument doesn't fit into a buffer"
+  _BAKE_TEXT assert_arg, ..text, text_len
+  CCALL assert_str_build, [assert_arg], text_len
+  CCALL assert_str_parse, line
+  ASSERT_STR_ARG "] "
+ }
+
 ;;
 ;; Bake hardcoded text of the arg in 'assert_arg'
 ;; then copy into an 'assert_str'
