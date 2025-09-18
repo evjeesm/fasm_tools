@@ -29,7 +29,7 @@ _start:
     ASSERT_POSITIVE 1, "Should be positive"
     ASSERT_ZERO 0, "Should be zero"
     ASSERT_POSITIVE +1, "Should be positive"
-    _ASSERT_RANGE _OP_EQ, src, dest, src_len, "Hoho"
+    ASSERT_RANGES_BYTE_NE src, src, src_len, "Hoho"
     ;; CCALL assert_strcpy, [other], [src], 5, src_len
     ;; CCALL assert_str_begin
     ;; CCALL assert_str_build, [src], src_len

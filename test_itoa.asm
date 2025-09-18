@@ -5,10 +5,10 @@ include 'inl_itoa.inc'
 
 entry _start
 
-macro TO_STR dest,src { ITOA dest,src,8,16,1,LOWER,0xA }
+macro TO_STR dest,src { ITOA dest,src,8,16,0,UPPER,0xA }
 
 _start:
-    mov rax, -12
+    mov rax, -0xA
     TO_STR [buf], rax
     PRINT  [buf], rdx
 
