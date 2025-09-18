@@ -286,6 +286,8 @@ macro _ASSERT_RANGES op, value, expected, size, msg
       STATIC_ASSERT 0, "OP not implemented!"
     end repeat
 
+    sub rcx, size - 1
+    neg rcx
     push rcx ; store mismatch point
 
     CCALL assert_str_begin
@@ -301,40 +303,60 @@ macro _ASSERT_RANGES op, value, expected, size, msg
     ASSERT_STR_ARG '(actual:'#value#', expected:'#expected#')'
     CCALL assert_str_build, assert_nl, 1
 
+    ;; HEX
     ;; Print matching part
     mov rcx, [rsp]
-    sub rcx, size - 1
-    neg rcx
-    ;; CCALL assert_str_build, value, rcx
     CCALL assert_str_hex, value, rcx
 
     ;; Print mismatched char
     CCALL assert_str_build, assert_red, assert_red_len
     mov rdi, [rsp]
-    sub rdi, size - 1
-    neg rdi
     lea rdi, [value + rdi]
     push rdi
     inc qword [rsp]
     CCALL assert_str_hex, rdi, 1
-    ;; CCALL assert_str_build, rdi, 1
     CCALL assert_str_build, [assert_clear], assert_clear_len
 
     ;; Print rest
     mov rcx, [rsp+8]
+    sub rcx, size - 1
+    neg rcx
     pop rdi
     CCALL assert_str_hex, rdi, rcx
-    ;; CCALL assert_str_build, rdi, rcx
+    CCALL assert_str_pad, ' ', 4
+
+    ;; Verbatim
+    ;; Print matching part
+    mov rcx, [rsp]
+    CCALL assert_str_build, value, rcx
+
+    ;; Print mismatched char
+    CCALL assert_str_build, assert_red, assert_red_len
+    mov rdi, [rsp]
+    lea rdi, [value + rdi]
+    push rdi
+    inc qword [rsp]
+    CCALL assert_str_build, rdi, 1
+    CCALL assert_str_build, [assert_clear], assert_clear_len
+
+    ;; Print rest
+    mov rcx, [rsp+8]
+    sub rcx, size - 1
+    neg rcx
+    pop rdi
+    CCALL assert_str_build, rdi, rcx
     CCALL assert_str_build, assert_nl, 1
 
+    ;; HEX
     ;; Print expected
-    ;; CCALL assert_str_build, expected, size
     CCALL assert_str_hex, expected, size
+    CCALL assert_str_pad, ' ', 4
+    ;; Verbatim
+    CCALL assert_str_build, expected, size
+
     CCALL assert_str_build, assert_nl, 1
 
-    ; [ASSERT] 
     CCALL assert_str_build, [assert_red], assert_red_len
-    CCALL assert_str_build, [assert_m], assert_m_len
     ASSERT_STR_ARG msg
     CCALL assert_str_build, [assert_clear], assert_clear_len
 
