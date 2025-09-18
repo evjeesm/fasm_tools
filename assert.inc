@@ -23,6 +23,17 @@ ASSERT_COLOR_NONE equ "[0m"
 
 ;; macro TO_STR dest,src { ITOA dest,src,64,10,0,LOWER }
 
+macro STATIC_ASSERT cond*, msg*
+ {
+  if ~(cond)
+     display \
+       ASSERT_COLOR_FG_RED, \
+       "STATIC ASSERT: ", msg, \
+       ASSERT_COLOR_NONE
+     err
+  end if
+ }
+
 ;;
 ;; Bake hardcoded text of the arg in 'assert_arg'
 ;; then copy into an 'assert_str'
@@ -40,10 +51,8 @@ macro ASSERT_STR_ARG arg
   end virtual
   if ..text_len > ASSERT_ARG_LEN
 
-      display \
-        ASSERT_COLOR_FG_RED, \
-        "ASSERT ERROR: Argument doesn't fit into a buffer", \
-        ASSERT_COLOR_NONE
+  STATIC_ASSERT text_len <= ASSERT_ARG_LEN, \
+    "Argument doesn't fit into a buffer"
 
       err
   end if

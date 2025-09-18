@@ -135,6 +135,21 @@ macro _ITOA_BODY bits, base
     test eax, eax
     jnz .digit
 
+  if base = 16
+    local .zeroes, .no_zeroes, tdigits
+    tdigits = bits / 8 * 2
+    mov rax, tdigits
+    sub rax, rcx
+    jz .no_zeroes
+    mov rcx, rax
+.zeroes:
+    dec rsp
+    mov byte [rsp], '0'
+    loop .zeroes
+.no_zeroes:
+    mov rcx, tdigits
+  end if
+
     ;; copy from stack to dest
     mov rdx, rcx ; backup count
     cld
