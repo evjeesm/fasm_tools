@@ -52,30 +52,34 @@ macro ASSERT_LOCATION file*, line*
 ;;
 ;; Bake hardcoded text of the arg in 'assert_arg'
 ;; then copy into an 'assert_str'
-;; 
+;;
 macro ASSERT_STR_ARG arg
  {
- local ..text, n, d, dest
+ local ..text, text_len
   virtual at 0
     ..text:: irps a, arg \{
       ;; capturing down whole expression
       ;; (negative literal case)
       db \`a
     \}
-    ..text_len = $
+    text_len = $
   end virtual
-  if ..text_len > ASSERT_ARG_LEN
 
   STATIC_ASSERT text_len <= ASSERT_ARG_LEN, \
     "Argument doesn't fit into a buffer"
 
-      err
-  end if
-  dest = assert_arg
+  _BAKE_TEXT assert_arg, ..text, text_len
+
+  CCALL assert_str_build, [assert_arg], text_len
+ }
+
+macro _BAKE_TEXT dest*, vsrc*, text_len
+ {
+  local n, d
   n = 0
   d = 4
-  while n < ..text_len
-    repeat (..text_len-n)/d
+  while n < text_len
+    repeat (text_len-n)/d
       local _STORE
       macro _STORE dest, src, size, offset
       \{
@@ -84,17 +88,16 @@ macro ASSERT_STR_ARG arg
           mov size [dest+offset], chunk
       \}
       if d = 4
-        _STORE dest, ..text, dword, n
+        _STORE dest, vsrc, dword, n
       else if d = 2
-        _STORE dest, ..text, word, n
+        _STORE dest, vsrc, word, n
       else if d = 1
-        _STORE dest, ..text, byte, n
+        _STORE dest, vsrc, byte, n
       end if
       n = n + d
     end repeat
     d = d / 2
   end while
-  CCALL assert_str_build, [assert_arg], ..text_len
  }
 
 ;; OPS: EQ, NE, GT, LT, LE, GE
