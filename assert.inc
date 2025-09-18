@@ -14,13 +14,11 @@ _OP_NOT_ZERO = 7
 _OP_POSITIVE = 8
 _OP_NEGATIVE = 9
 
-_OP_RANGES_EQ = 0
-_OP_RANGES_NE = 1
-_OP_RANGES_BYTE_EQ = 2
-_OP_RANGES_BYTE_NE = 3
+_OP_RANGE_ALL_EQ = 0
+_OP_RANGE_ANY_NE = 1
+_OP_RANGE_ANY_EQ = 2
+_OP_RANGE_ALL_NE = 3
 
-
-ASSERT_ARG_LEN = 64
 ASSERT_STR_LEN = 1024
 
 ASSERT_COLOR_FG_RED equ "[31m"
@@ -213,43 +211,7 @@ macro _ASSERT_TEST op, value, msg
   END_DEBUG
  }
 
-macro _GEN_ASSERTS [args*]
- {
- common
- irp arg, args \{
-  macro ASSERT_\#arg ...& \\{
-  common
-     _ASSERT_CMP _OP_\\#arg, ...
- \\}
- \}
- }
-_GEN_ASSERTS EQ, NE, GT, LT, GE, LE
-
-macro _GEN_UNARRY_ASSERTS [args*]
- {
- common
- irp arg, args \{
-  macro ASSERT_\#arg ...& \\{
-  common
-     _ASSERT_TEST _OP_\\#arg, ...
- \\}
- \}
- }
-_GEN_UNARRY_ASSERTS ZERO, NOT_ZERO, POSITIVE, NEGATIVE
-
-macro _GEN_RANGES_ASSERTS [args*]
- {
- common
- irp arg, args \{
-  macro ASSERT_\#arg ...& \\{
-  common
-     _ASSERT_RANGES _OP_\\#arg, ...
- \\}
- \}
- }
-_GEN_RANGES_ASSERTS RANGES_EQ, RANGES_NE, RANGES_BYTE_EQ, RANGES_BYTE_NE
-
-macro _ASSERT_RANGES op, value, expected, size, msg
+ macro _ASSERT_RANGE op, actual, expected, size, msg
  {
  DEBUG
  local .ok
@@ -259,26 +221,26 @@ macro _ASSERT_RANGES op, value, expected, size, msg
     push rcx
 
     lea rdi, [expected]
-    lea rsi, [value]
+    lea rsi, [actual]
     mov rcx, size
 
     repeat 1
-      match =_OP_RANGES_EQ, op \{
+      match =_OP_RANGE_ALL_EQ, op \{
         repe cmpsb
         je .ok
       break
       \}
-      match =_OP_RANGES_NE, op \{
+      match =_OP_RANGE_ANY_NE, op \{
         repe cmpsb
         jne .ok
       break
       \}
-      match =_OP_RANGES_BYTE_NE, op \{
+      match =_OP_RANGE_ALL_NE, op \{
         repne cmpsb
         jne .ok
       break
       \}
-      match =_OP_RANGES_BYTE_EQ, op \{
+      match =_OP_RANGE_ANY_EQ, op \{
         repne cmpsb
         je .ok
       break
@@ -294,24 +256,23 @@ macro _ASSERT_RANGES op, value, expected, size, msg
 
     ; [ASSERT] 
     CCALL assert_str_build, [assert_red], assert_red_len
-    CCALL assert_str_build, [assert_m], assert_m_len
+    CCALL assert_str_build, [assert_rm], assert_rm_len
     CCALL assert_str_build, [assert_clear], assert_clear_len
 
     ASSERT_LOCATION __FILE__, __LINE__
-    ASSERT_STR_ARG "RANGES "
     CCALL assert_str_ranges_op, op
-    ASSERT_STR_ARG '(actual:'#value#', expected:'#expected#')'
+    ASSERT_STR_ARG '(actual:'#actual#', expected:'#expected#')'
     CCALL assert_str_build, assert_nl, 1
 
     ;; HEX
     ;; Print matching part
     mov rcx, [rsp]
-    CCALL assert_str_hex, value, rcx
+    CCALL assert_str_hex, actual, rcx
 
     ;; Print mismatched char
     CCALL assert_str_build, assert_red, assert_red_len
     mov rdi, [rsp]
-    lea rdi, [value + rdi]
+    lea rdi, [actual + rdi]
     push rdi
     inc qword [rsp]
     CCALL assert_str_hex, rdi, 1
@@ -328,12 +289,12 @@ macro _ASSERT_RANGES op, value, expected, size, msg
     ;; Verbatim
     ;; Print matching part
     mov rcx, [rsp]
-    CCALL assert_str_build, value, rcx
+    CCALL assert_str_build, actual, rcx
 
     ;; Print mismatched char
     CCALL assert_str_build, assert_red, assert_red_len
     mov rdi, [rsp]
-    lea rdi, [value + rdi]
+    lea rdi, [actual + rdi]
     push rdi
     inc qword [rsp]
     CCALL assert_str_build, rdi, 1
@@ -370,6 +331,122 @@ macro _ASSERT_RANGES op, value, expected, size, msg
     popfq
   END_DEBUG
  }
+
+macro _ASSERT_RANGE_CHAR op, actual, char, size, msg
+ {
+ DEBUG
+ local .ok
+    pushfq
+    push rdi ;; [NOTE] push dont work on 32 and 8 bit regs
+    push rcx
+
+    lea rdi, [actual]
+    mov rax, char
+    mov rcx, size
+
+    repeat 1
+      match =_OP_RANGE_ALL_EQ, op \{
+        repe scasb
+        je .ok
+      break
+      \}
+      match =_OP_RANGE_ANY_NE, op \{
+        repe scasb
+        jne .ok
+      break
+      \}
+      match =_OP_RANGE_ALL_NE, op \{
+        repne scasb
+        jne .ok
+      break
+      \}
+      match =_OP_RANGE_ANY_EQ, op \{
+        repne scasb
+        je .ok
+      break
+      \}
+      STATIC_ASSERT 0, "OP not implemented!"
+    end repeat
+
+    sub rcx, size - 1
+    neg rcx
+    push rcx ; store mismatch point
+
+    CCALL assert_str_begin
+
+    ; [ASSERT] 
+    CCALL assert_str_build, [assert_red], assert_red_len
+    CCALL assert_str_build, [assert_rm], assert_rm_len
+    CCALL assert_str_build, [assert_clear], assert_clear_len
+
+    ASSERT_LOCATION __FILE__, __LINE__
+    CCALL assert_str_ranges_op, op
+    ASSERT_STR_ARG '(actual:'#actual#', char:"'#char#'")'
+    CCALL assert_str_build, assert_nl, 1
+
+    CCALL assert_str_range_actual, [actual], *[rsp], size
+
+    CCALL assert_str_build, [assert_red], assert_red_len
+    ASSERT_STR_ARG msg
+    CCALL assert_str_build, [assert_clear], assert_clear_len
+
+    ERROR [assert_str], [assert_str_index]
+    pop rcx
+    SYSCALL EXIT, -1
+.ok:
+    pop rcx
+    pop rdi
+    popfq
+  END_DEBUG
+ }
+
+macro _GEN_ASSERTS [args*]
+ {
+ common
+ irp arg, args \{
+  macro ASSERT_\#arg ...& \\{
+  common
+     _ASSERT_CMP _OP_\\#arg, ...
+ \\}
+ \}
+ }
+_GEN_ASSERTS EQ, NE, GT, LT, GE, LE
+
+macro _GEN_UNARRY_ASSERTS [args*]
+ {
+ common
+ irp arg, args \{
+  macro ASSERT_\#arg ...& \\{
+  common
+     _ASSERT_TEST _OP_\\#arg, ...
+ \\}
+ \}
+ }
+_GEN_UNARRY_ASSERTS ZERO, NOT_ZERO, POSITIVE, NEGATIVE
+
+macro _GEN_RANGE_ASSERTS [args*]
+ {
+ common
+ irp arg, args \{
+  macro ASSERT_RANGE_\#arg ...& \\{
+  common
+     _ASSERT_RANGE _OP_RANGE_\\#arg, ...
+ \\}
+ \}
+ }
+_GEN_RANGE_ASSERTS ALL_EQ, ANY_NE, ANY_EQ, ALL_NE
+
+macro _GEN_RANGE_REG_ASSERTS [args*]
+ {
+ common
+ irp arg, args \{
+  macro ASSERT_RANGE_CHAR_\#arg ...& \\{
+  common
+     _ASSERT_RANGE_CHAR _OP_RANGE_\\#arg, ...
+ \\}
+ \}
+ }
+_GEN_RANGE_REG_ASSERTS ALL_EQ, ANY_NE, ANY_EQ, ALL_NE
 
 postpone
  {
@@ -481,6 +558,67 @@ assert_str_pad:
     rep stosb
     ret
 
+;; Print actual range
+;; rdi - actual
+;; rsi - assert point
+;; rdx - size
+assert_str_range_actual:
+    push rbp
+    mov rbp, rsp
+
+    dec rdx
+    push rdx ;; size
+    push rdi ;; actual
+    push rsi ;; assert point
+
+    ;; HEX
+    ;; Print matching part
+    mov rsi, [rsp]
+    CCALL assert_str_hex, rdi, rsi
+
+    ;; Print mismatched char
+    CCALL assert_str_build, assert_red, assert_red_len
+    mov rdi, [rsp]   ;; assert point
+    add rdi, [rsp+8] ;; actual
+    push rdi
+    inc qword [rsp]
+    CCALL assert_str_hex, [rdi], 1
+    CCALL assert_str_build, [assert_clear], assert_clear_len
+
+    ;; Print rest
+    mov rcx, [rsp+8]    ;; assert point
+    sub rcx, [rsp+8+16] ;; size
+    neg rcx
+    pop rdi
+    CCALL assert_str_hex, [rdi], rcx
+    CCALL assert_str_pad, ' ', 4
+
+    ;; Verbatim
+    ;; Print matching part
+    mov rdi, [rsp+8]
+    mov rsi, [rsp]
+    CCALL assert_str_build, rdi, rsi
+
+    ;; Print mismatched char
+    CCALL assert_str_build, assert_red, assert_red_len
+    mov rdi, [rsp]   ;; assert point
+    add rdi, [rsp+8] ;; actual
+    push rdi
+    inc qword [rsp]
+    CCALL assert_str_build, [rdi], 1
+    CCALL assert_str_build, [assert_clear], assert_clear_len
+
+    ;; Print rest
+    mov rcx, [rsp+8]
+    sub rcx, [rsp+8+16]
+    neg rcx
+    pop rdi
+    CCALL assert_str_build, rdi, rcx
+    CCALL assert_str_build, assert_nl, 1
+
+    add rsp, 8*3
+    pop rbp
+    ret
 ;;
 ;;
 ;; rdi - enum of the sign
@@ -522,31 +660,23 @@ assert_str_op:
 assert_str_ranges_op:
     jmp @f
 .signs:
-    dq assert_ranges_missmatch
-    dq assert_ranges_match
+    dq assert_ranges_all_eq
+    dq assert_ranges_any_ne
+    dq assert_ranges_any_eq
+    dq assert_ranges_all_ne
 .signs.sizes:
-    db assert_ranges_missmatch_len
-    db assert_ranges_match_len
+    db assert_ranges_all_eq_len
+    db assert_ranges_any_ne_len
+    db assert_ranges_any_eq_len
+    db assert_ranges_all_ne_len
 @@:
-    ;; rdi % 2
-    push rax
-    push rbx
-    push rdx
-    xor rdx, rdx
-    mov rbx, 2
-    mov rax, rdi
-    div rbx
-    mov rdi, rdx
-    pop rdx
-    pop rbx
-    pop rax
-
     movzx rsi, byte [rdi + .signs.sizes]
     lea rdi, [.signs+(rdi*8)]
     mov rdi, [dword edi]
 
     CCALL assert_str_build, rdi, rsi
     ret
+
   segment readable
     assert_red db ASSERT_COLOR_FG_RED
     assert_red_len = $ - assert_red
@@ -595,10 +725,16 @@ assert_str_ranges_op:
 
     assert_nl db 10
 
-    assert_ranges_missmatch db "miss"
-    assert_ranges_match db "match "
-    assert_ranges_missmatch_len = $ - assert_ranges_missmatch
-    assert_ranges_match_len = $ - assert_ranges_match
+    assert_rm db "[ASSERT RANGE] "
+    assert_rm_len = $ - assert_rm
+    assert_ranges_all_eq db "All equal "
+    assert_ranges_all_eq_len = $ - assert_ranges_all_eq
+    assert_ranges_any_ne db "Any different "
+    assert_ranges_any_ne_len = $ - assert_ranges_any_ne
+    assert_ranges_any_eq db "Any equal "
+    assert_ranges_any_eq_len = $ - assert_ranges_any_eq
+    assert_ranges_all_ne db "All not equal "
+    assert_ranges_all_ne_len = $ - assert_ranges_all_ne
 
   segment readable writable
     assert_str_index dq 0
