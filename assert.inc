@@ -124,6 +124,7 @@ macro _ASSERT_CMP op, value, expected, msg
     CCALL assert_str_build, [assert_red], assert_red_len
     CCALL assert_str_build, [assert_m], assert_m_len
     CCALL assert_str_build, [assert_clear], assert_clear_len
+    ASSERT_LOCATION __FILE__, __LINE__
 
     ASSERT_STR_ARG value
 
