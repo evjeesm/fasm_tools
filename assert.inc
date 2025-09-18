@@ -26,8 +26,9 @@ ASSERT_STR_LEN = 1024
 ASSERT_COLOR_FG_RED equ "[31m"
 ASSERT_COLOR_NONE equ "[0m"
 
-;; macro TO_STR dest,src { ITOA dest,src,64,10,0,LOWER }
-
+;;
+;; Classical compile time assert with message.
+;;
 macro STATIC_ASSERT cond*, msg*
  {
   if ~(cond)
@@ -39,6 +40,9 @@ macro STATIC_ASSERT cond*, msg*
   end if
  }
 
+;;
+;; Puts source code location to an assert message.
+;;
 macro ASSERT_LOCATION file*, line*
  {
  local ..text, text_len
@@ -55,8 +59,7 @@ macro ASSERT_LOCATION file*, line*
  }
 
 ;;
-;; Bake hardcoded text of the arg in 'assert_arg'
-;; then copy into an 'assert_str'
+;; Bake hardcoded text of the arg into the assert message.
 ;;
 macro ASSERT_STR_ARG arg
  {
@@ -78,6 +81,10 @@ macro ASSERT_STR_ARG arg
   CCALL assert_str_build, [assert_arg], text_len
  }
 
+;;
+;; Hardcode a text defined in a virtual block at 'vsrc' label.
+;; Macro tries to store text using less mov instructions.
+;;
 macro _BAKE_TEXT dest*, vsrc*, text_len
  {
   local n, d
