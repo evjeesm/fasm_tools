@@ -445,6 +445,20 @@ assert_str_hex:
     mov rax, [assert_str_index]
 .exit:
     ret
+
+;; Appends padding to assert string
+;; using specific character and length.
+;; rdi - char
+;; rsi - length
+assert_str_pad:
+    mov rax, rdi
+    mov rcx, rsi
+    lea rdi, [assert_str]
+    add rdi, [assert_str_index]
+    add [assert_str_index], rsi
+    rep stosb
+    ret
+
 ;;
 ;;
 ;; rdi - enum of the sign
