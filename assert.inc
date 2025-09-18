@@ -65,7 +65,7 @@ macro ASSERT_LOCATION file*, line*
 ;;
 ;; Bake hardcoded text of the arg into the assert message.
 ;;
-macro ASSERT_STR_ARG arg
+macro ASSERT_STR_ARG arg*
  {
  local ..text, text_len
   virtual at 0
@@ -394,8 +394,7 @@ assert_str_build:
 assert_str_parse:
     mov rsi, rdi
     lea rdi, [assert_str]
-    mov rax, [assert_str_index]
-    add rdi, rax
+    add rdi, [assert_str_index]
 
     ;; maybe replace in the future
     ;; or wrap as routine
@@ -411,8 +410,7 @@ assert_str_parse:
 assert_str_parse_signed:
     mov rsi, rdi
     lea rdi, [assert_str]
-    mov rax, [assert_str_index]
-    add rdi, rax
+    add rdi, [assert_str_index]
 
     ;; maybe replace in the future
     ;; or wrap as routine
@@ -435,8 +433,7 @@ assert_str_hex:
     push rcx
     push rsi
     lea rdi, [assert_str]
-    mov rax, [assert_str_index]
-    add rdi, rax
+    add rdi, [assert_str_index]
     ITOA rdi, [rsi], 8, 16, 1, UPPER, ' '
     add [assert_str_index], rdx
     pop rsi
