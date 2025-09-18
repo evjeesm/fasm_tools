@@ -124,9 +124,6 @@ macro _ITOA_BODY bits, base
   end if
     xor edx, edx ; clear remainder
     mov r11, base
-    dec rsp
-    mov byte [rsp], 0
-    inc rcx
     lea r9, [.S]
 .digit:
     div r11
