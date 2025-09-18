@@ -50,10 +50,14 @@ macro ASSERT_LOCATION file*, line*
     ..text:: db file, "["
     text_len = $
   end virtual
-  STATIC_ASSERT text_len <= ASSERT_ARG_LEN, \
-    "Argument doesn't fit into a buffer"
-  _BAKE_TEXT assert_arg, ..text, text_len
-  CCALL assert_str_build, [assert_arg], text_len
+
+  lea rdi, [assert_str]
+  add rdi, [assert_str_index]
+
+  _BAKE_TEXT rdi, ..text, text_len
+
+  add [assert_str_index], text_len
+
   CCALL assert_str_parse, line
   ASSERT_STR_ARG "] "
  }
@@ -73,12 +77,11 @@ macro ASSERT_STR_ARG arg
     text_len = $
   end virtual
 
-  STATIC_ASSERT text_len <= ASSERT_ARG_LEN, \
-    "Argument doesn't fit into a buffer"
+  lea rdi, [assert_str]
+  add rdi, [assert_str_index]
 
-  _BAKE_TEXT assert_arg, ..text, text_len
-
-  CCALL assert_str_build, [assert_arg], text_len
+  _BAKE_TEXT rdi, ..text, text_len
+  add [assert_str_index], text_len
  }
 
 ;;
@@ -565,8 +568,6 @@ assert_str_ranges_op:
     assert_ranges_match_len = $ - assert_ranges_match
 
   segment readable writable
-    assert_arg rb ASSERT_ARG_LEN
-
     assert_str_index dq 0
     assert_str rb ASSERT_STR_LEN
 END_DEBUG
