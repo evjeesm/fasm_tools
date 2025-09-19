@@ -62,7 +62,7 @@ macro ASSERT_LOCATION file*, line*
 
   add [assert_str_index], text_len
 
-  CCALL assert_str_parse, line
+  CCALL assert_str_format, line
   ASSERT_STR_ARG "] "
  }
 
@@ -167,7 +167,7 @@ macro _ASSERT_CMP op*, value*, expected*, msg*
         jle .ok
       break
       \}
-      STATIC_ASSERT 0, "OP not implemented!"
+      STATIC_ASSERT 0, `op#" is not implemented yet!"
     end repeat
 
     push r10
@@ -185,10 +185,10 @@ macro _ASSERT_CMP op*, value*, expected*, msg*
 
     CCALL assert_str_build, [assert_comma], 2
     CCALL assert_str_build, [assert_obr], 1
-    CCALL assert_str_parse, *[rsp] ;; value
+    CCALL assert_str_format, *[rsp] ;; value
 
     CCALL assert_str_op, op
-    CCALL assert_str_parse, *[rsp+8] ;; expected
+    CCALL assert_str_format, *[rsp+8] ;; expected
     CCALL assert_str_build, [assert_cbr], 1
     CCALL assert_str_build, [assert_space], 1
 
@@ -235,7 +235,7 @@ macro _ASSERT_TEST op*, value*, msg*
         js  .ok
       break
       \}
-      STATIC_ASSERT 0, "OP not implemented!"
+      STATIC_ASSERT 0, `op#" is not implemented yet!"
     end repeat
 
     CCALL assert_str_build, [assert_red], assert_red_len
@@ -248,7 +248,7 @@ macro _ASSERT_TEST op*, value*, msg*
 
     CCALL assert_str_build, [assert_comma], 2
     CCALL assert_str_build, [assert_obr], 1
-    CCALL assert_str_parse_signed, rax
+    CCALL assert_str_format_signed, rax
 
     CCALL assert_str_op, op
     CCALL assert_str_build, [assert_cbr], 1
@@ -303,7 +303,7 @@ macro _ASSERT_TEST op*, value*, msg*
         je .ok
       break
       \}
-      STATIC_ASSERT 0, "OP not implemented!"
+      STATIC_ASSERT 0, `op#" is not implemented yet!"
     end repeat
 
     sub rcx, size - 1
@@ -373,7 +373,7 @@ macro _ASSERT_RANGE_CHAR op*, actual*, char*, size*, msg*
         je .ok
       break
       \}
-      STATIC_ASSERT 0, "OP not implemented!"
+      STATIC_ASSERT 0, `op#" is not implemented yet!"
     end repeat
 
     sub rcx, size - 1
@@ -483,7 +483,7 @@ assert_str_begin:
 
 ;; Copy string to assert message buffer advancing the index.
 ;; rdi - src,
-;; rsi - src_len,
+;; rsi - src_len
 assert_str_build:
     mov rcx, rsi
     mov rsi, rdi
@@ -497,10 +497,9 @@ assert_str_build:
     add [assert_str_index], r8
     ret
 
-;; Parse contents of the register as unsigned integer
-;; into the assert message buffer
+;; Format register as an unsigned integer onto 'assert_str'
 ;; rdi - src
-assert_str_parse:
+assert_str_format:
     mov rsi, rdi
     lea rdi, [assert_str]
     add rdi, [assert_str_index]
@@ -513,10 +512,9 @@ assert_str_parse:
     mov rax, [assert_str_index]
     ret
 
-;; Parse contents of the register as signed integer
-;; into the assert message buffer
-;; rdi - src,
-assert_str_parse_signed:
+;; Format register as a signed integer onto 'assert_str'
+;; rdi - src
+assert_str_format_signed:
     mov rsi, rdi
     lea rdi, [assert_str]
     add rdi, [assert_str_index]
@@ -529,11 +527,10 @@ assert_str_parse_signed:
     mov rax, [assert_str_index]
     ret
 
-;; Parse contents of the register as hexadecimal
-;; into the assert message buffer
+;; Format register as a hexadecimal onto 'assert_str'
 ;; rdi - src,
 ;; rsi - length
-assert_str_hex:
+assert_str_format_hex:
     mov rcx, rsi
     mov rsi, rdi
     test rcx, rcx
@@ -582,7 +579,7 @@ assert_str_range_actual:
     push rdi ;; range
     push rsi ;; assert_offset
 
-    CCALL .print, assert_str_hex ;; Hex
+    CCALL .print, assert_str_format_hex ;; Hex
     CCALL assert_str_pad, ' ', 4
     CCALL .print, assert_str_build ;; Verbatim
     CCALL assert_str_build, assert_nl, 1
@@ -641,7 +638,7 @@ assert_str_range_expected:
     push rdi ;; range
     push rsi ;; assert_offset
 
-    CCALL .print, assert_str_hex ;; Hex
+    CCALL .print, assert_str_format_hex ;; Hex
     CCALL assert_str_pad, ' ', 4
     CCALL .print, assert_str_build ;; Verbatim
     CCALL assert_str_build, assert_nl, 1

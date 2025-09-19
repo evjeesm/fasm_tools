@@ -30,7 +30,7 @@ _start:
     ASSERT_ZERO 0, "Should be zero"
     ASSERT_POSITIVE +1, "Should be positive"
     ASSERT_RANGE_ALL_NE src, dest, src_len, "Hoho"
-    ASSERT_RANGE_CHAR_ALL_NE src, 'H', src_len, "Hoho"
+    ASSERT_RANGE_CHAR_ALL_EQ src, 'H', src_len, "Hoho"
 
     SYSCALL EXIT, 0
 
