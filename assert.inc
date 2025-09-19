@@ -69,17 +69,21 @@ macro ASSERT_LOCATION file*, line*
 ;;
 ;; Bake hardcoded text of the arg into the assert message.
 ;;
-macro ASSERT_STR_ARG arg*
+macro ASSERT_STR_ARG [arg*]
  {
- local ..text, text_len
-  virtual at 0
-    ..text:: irps a, arg \{
+ common
+  local ..text, text_len
+    virtual at 0
+      ..text::
+ forward
+    irps a, arg \{
       ;; capturing down whole expression
       ;; (negative literal case)
-      db \`a
+        db \`a
     \}
-    text_len = $
-  end virtual
+ common
+      text_len = $
+    end virtual
 
   lea rdi, [assert_str]
   add rdi, [assert_str_index]
@@ -313,7 +317,7 @@ macro _ASSERT_TEST op*, value*, msg*
 
     ASSERT_LOCATION __FILE__, __LINE__
     CCALL assert_str_ranges_op, op
-    ASSERT_STR_ARG '(actual:'#actual#', expected:'#expected#')'
+    ASSERT_STR_ARG '(actual:', actual, ', expected:', expected ,')'
     CCALL assert_str_build, assert_nl, 1
 
     CCALL assert_str_range_actual, [actual], *[rsp], size
@@ -384,10 +388,7 @@ macro _ASSERT_RANGE_CHAR op*, actual*, char*, size*, msg*
     ASSERT_LOCATION __FILE__, __LINE__
 
     CCALL assert_str_ranges_op, op
-    ASSERT_STR_ARG '(actual:'#actual#', char:'
-    ASSERT_STR_ARG "'"
-    ASSERT_STR_ARG char
-    ASSERT_STR_ARG "' "
+    ASSERT_STR_ARG '(actual:', actual, ', char:', "'", char, "' "
     ASSERT_STR_HEX_CHAR char
     ASSERT_STR_ARG ')'
     CCALL assert_str_build, assert_nl, 1
@@ -445,7 +446,7 @@ macro _GEN_RANGE_ASSERTS [args*]
  }
 _GEN_RANGE_ASSERTS ALL_EQ, ANY_NE, ANY_EQ, ALL_NE
 
-macro _GEN_RANGE_REG_ASSERTS [args*]
+macro _GEN_RANGE_CHAR_ASSERTS [args*]
  {
  common
  irp arg, args \{
@@ -455,7 +456,7 @@ macro _GEN_RANGE_REG_ASSERTS [args*]
  \\}
  \}
  }
-_GEN_RANGE_REG_ASSERTS ALL_EQ, ANY_NE, ANY_EQ, ALL_NE
+_GEN_RANGE_CHAR_ASSERTS ALL_EQ, ANY_NE, ANY_EQ, ALL_NE
 
 postpone
  {
