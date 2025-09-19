@@ -1,7 +1,8 @@
 include 'comptime.inc'
 
-;; Enum for the sign
-;; [TODO] use IOTA
+;; Usage: (in routine)
+;;   ASSERT_EQ value, expected, msg
+;;  ... rest for other op's
 _OP_EQ = 0
 _OP_NE = 1
 _OP_GT = 2
@@ -14,6 +15,11 @@ _OP_NOT_ZERO = 7
 _OP_POSITIVE = 8
 _OP_NEGATIVE = 9
 
+;; Usage: (in routine)
+;;   ASSERT_RANGE_ALL_EQ actual, expected, size, msg
+;; or:
+;;   ASSERT_RANGE_CHAR_ALL_EQ actual, char, size, msg
+;;  ... rest for other op's
 _OP_RANGE_ALL_EQ = 0
 _OP_RANGE_ANY_NE = 1
 _OP_RANGE_ANY_EQ = 2
@@ -82,6 +88,14 @@ macro ASSERT_STR_ARG arg*
   add [assert_str_index], text_len
  }
 
+macro ASSERT_STR_HEX_CHAR arg*
+ {
+    lea rdi, [assert_str]
+    add rdi, [assert_str_index]
+    ITOA rdi, arg, 8, 16, 1, UPPER, ' '
+    add [assert_str_index], rdx
+ }
+
 ;;
 ;; Hardcode a text defined in a virtual block at 'vsrc' label.
 ;; Macro tries to store text using less mov instructions.
@@ -113,7 +127,6 @@ macro _BAKE_TEXT dest*, vsrc*, text_len
   end while
  }
 
-;; OPS: EQ, NE, GT, LT, LE, GE
 macro _ASSERT_CMP op, value, expected, msg
  {
  DEBUG
@@ -124,15 +137,38 @@ macro _ASSERT_CMP op, value, expected, msg
 
     mov rax, value
     mov r10, expected
-
     cmp rax, r10
+    repeat 1
+      match =_OP_EQ, op \{
+        je  .ok
+      break
+      \}
+      match =_OP_NE, op \{
+        jne  .ok
+      break
+      \}
+      match =_OP_GT, op \{
+        jg  .ok
+      break
+      \}
+      match =_OP_LT, op \{
+         jl  .ok
+      break
+      \}
+      match =_OP_GE, op \{
+        jge .ok
+      break
+      \}
+      match =_OP_LE, op \{
+        jle .ok
+      break
+      \}
+      STATIC_ASSERT 0, "OP not implemented!"
+    end repeat
 
-    match =_OP_EQ, op \{ je  .ok \}
-    match =_OP_NE, op \{ jne .ok \}
-    match =_OP_GT, op \{ jg  .ok \}
-    match =_OP_LT, op \{ jl  .ok \}
-    match =_OP_GE, op \{ jge .ok \}
-    match =_OP_LE, op \{ jle .ok \}
+    push r10
+    push rax
+
     CCALL assert_str_begin
     CCALL assert_str_build, [assert_red], assert_red_len
     CCALL assert_str_build, [assert_m], assert_m_len
@@ -146,18 +182,21 @@ macro _ASSERT_CMP op, value, expected, msg
 
     CCALL assert_str_build, [assert_comma], 2
     CCALL assert_str_build, [assert_obr], 1
-    CCALL assert_str_parse, rax
+    CCALL assert_str_parse, *[rsp] ;; value
 
     CCALL assert_str_op, op
-    CCALL assert_str_parse, r10
+    CCALL assert_str_parse, *[rsp+8] ;; expected
     CCALL assert_str_build, [assert_cbr], 1
     CCALL assert_str_build, [assert_space], 1
 
     CCALL assert_str_build, [assert_red], assert_red_len
     ASSERT_STR_ARG msg
     CCALL assert_str_build, [assert_clear], assert_clear_len
+    CCALL assert_str_build, assert_nl, 1
+
     ERROR [assert_str], [assert_str_index]
 
+    add rsp, 8*5 ;; clean stack
     SYSCALL EXIT, -1
 .ok:
     pop r10
@@ -176,11 +215,25 @@ macro _ASSERT_TEST op, value, msg
     mov rax, value
 
     test rax, rax
-
-    match =_OP_ZERO, op \{ jz  .ok \}
-    match =_OP_NOT_ZERO, op \{ jnz .ok \}
-    match =_OP_POSITIVE, op \{ jg  .ok \}
-    match =_OP_NEGATIVE, op \{ js  .ok \}
+    repeat 1
+      match =_OP_ZERO, op \{
+        jz  .ok
+      break
+      \}
+      match =_OP_NOT_ZERO, op \{
+        jnz .ok
+      break
+      \}
+      match =_OP_POSITIVE, op \{
+        jg  .ok
+      break
+      \}
+      match =_OP_NEGATIVE, op \{
+        js  .ok
+      break
+      \}
+      STATIC_ASSERT 0, "OP not implemented!"
+    end repeat
 
     CCALL assert_str_begin
     CCALL assert_str_build, [assert_red], assert_red_len
@@ -202,8 +255,11 @@ macro _ASSERT_TEST op, value, msg
     CCALL assert_str_build, [assert_red], assert_red_len
     ASSERT_STR_ARG msg
     CCALL assert_str_build, [assert_clear], assert_clear_len
+    CCALL assert_str_build, assert_nl, 1
+
     ERROR [assert_str], [assert_str_index]
 
+    add rsp, 8*2 ;; clean stack
     SYSCALL EXIT, -1
 .ok:
     pop rax
@@ -252,8 +308,6 @@ macro _ASSERT_TEST op, value, msg
     neg rcx
     push rcx ; store mismatch point
 
-    CCALL assert_str_begin
-
     ; [ASSERT] 
     CCALL assert_str_build, [assert_red], assert_red_len
     CCALL assert_str_build, [assert_rm], assert_rm_len
@@ -264,72 +318,24 @@ macro _ASSERT_TEST op, value, msg
     ASSERT_STR_ARG '(actual:'#actual#', expected:'#expected#')'
     CCALL assert_str_build, assert_nl, 1
 
-    ;; HEX
-    ;; Print matching part
-    mov rcx, [rsp]
-    CCALL assert_str_hex, actual, rcx
-
-    ;; Print mismatched char
-    CCALL assert_str_build, assert_red, assert_red_len
-    mov rdi, [rsp]
-    lea rdi, [actual + rdi]
-    push rdi
-    inc qword [rsp]
-    CCALL assert_str_hex, rdi, 1
-    CCALL assert_str_build, [assert_clear], assert_clear_len
-
-    ;; Print rest
-    mov rcx, [rsp+8]
-    sub rcx, size - 1
-    neg rcx
-    pop rdi
-    CCALL assert_str_hex, rdi, rcx
-    CCALL assert_str_pad, ' ', 4
-
-    ;; Verbatim
-    ;; Print matching part
-    mov rcx, [rsp]
-    CCALL assert_str_build, actual, rcx
-
-    ;; Print mismatched char
-    CCALL assert_str_build, assert_red, assert_red_len
-    mov rdi, [rsp]
-    lea rdi, [actual + rdi]
-    push rdi
-    inc qword [rsp]
-    CCALL assert_str_build, rdi, 1
-    CCALL assert_str_build, [assert_clear], assert_clear_len
-
-    ;; Print rest
-    mov rcx, [rsp+8]
-    sub rcx, size - 1
-    neg rcx
-    pop rdi
-    CCALL assert_str_build, rdi, rcx
-    CCALL assert_str_build, assert_nl, 1
-
-    ;; HEX
-    ;; Print expected
-    CCALL assert_str_hex, expected, size
-    CCALL assert_str_pad, ' ', 4
-    ;; Verbatim
-    CCALL assert_str_build, expected, size
-
-    CCALL assert_str_build, assert_nl, 1
+    CCALL assert_str_range_actual, [actual], *[rsp], size
+    CCALL assert_str_range_expected, [expected], *[rsp], size
 
     CCALL assert_str_build, [assert_red], assert_red_len
     ASSERT_STR_ARG msg
     CCALL assert_str_build, [assert_clear], assert_clear_len
+    CCALL assert_str_build, assert_nl, 1
 
     ERROR [assert_str], [assert_str_index]
     pop rcx
+    add rsp, 8*4 ;; clean stack
     SYSCALL EXIT, -1
 .ok:
     pop rcx
     pop rsi
     pop rdi
     popfq
-  END_DEBUG
+ END_DEBUG
  }
 
 macro _ASSERT_RANGE_CHAR op, actual, char, size, msg
@@ -380,24 +386,31 @@ macro _ASSERT_RANGE_CHAR op, actual, char, size, msg
     CCALL assert_str_build, [assert_clear], assert_clear_len
 
     ASSERT_LOCATION __FILE__, __LINE__
+
     CCALL assert_str_ranges_op, op
-    ASSERT_STR_ARG '(actual:'#actual#', char:"'#char#'")'
+    ASSERT_STR_ARG '(actual:'#actual#', char:'
+    ASSERT_STR_ARG "'"
+    ASSERT_STR_ARG char
+    ASSERT_STR_ARG "' "
+    ASSERT_STR_HEX_CHAR char
+    ASSERT_STR_ARG ')'
     CCALL assert_str_build, assert_nl, 1
 
     CCALL assert_str_range_actual, [actual], *[rsp], size
-
     CCALL assert_str_build, [assert_red], assert_red_len
     ASSERT_STR_ARG msg
     CCALL assert_str_build, [assert_clear], assert_clear_len
+    CCALL assert_str_build, assert_nl, 1
 
     ERROR [assert_str], [assert_str_index]
     pop rcx
+    add rsp, 8*3 ;; clean stack
     SYSCALL EXIT, -1
 .ok:
     pop rcx
     pop rdi
     popfq
-  END_DEBUG
+ END_DEBUG
  }
 
 macro _GEN_ASSERTS [args*]
@@ -566,62 +579,106 @@ assert_str_range_actual:
     push rbp
     mov rbp, rsp
 
-    dec rdx
-    push rdx ;; size
-    push rdi ;; actual
-    push rsi ;; assert point
+    push rdx
+    dec qword [rsp] ;; size - 1
 
-    ;; HEX
-    ;; Print matching part
-    mov rsi, [rsp]
-    CCALL assert_str_hex, rdi, rsi
+    push rdi ;; range
+    push rsi ;; assert_offset
 
-    ;; Print mismatched char
-    CCALL assert_str_build, assert_red, assert_red_len
-    mov rdi, [rsp]   ;; assert point
-    add rdi, [rsp+8] ;; actual
-    push rdi
-    inc qword [rsp]
-    CCALL assert_str_hex, [rdi], 1
-    CCALL assert_str_build, [assert_clear], assert_clear_len
-
-    ;; Print rest
-    mov rcx, [rsp+8]    ;; assert point
-    sub rcx, [rsp+8+16] ;; size
-    neg rcx
-    pop rdi
-    CCALL assert_str_hex, [rdi], rcx
+    CCALL .print, assert_str_hex ;; Hex
     CCALL assert_str_pad, ' ', 4
-
-    ;; Verbatim
-    ;; Print matching part
-    mov rdi, [rsp+8]
-    mov rsi, [rsp]
-    CCALL assert_str_build, rdi, rsi
-
-    ;; Print mismatched char
-    CCALL assert_str_build, assert_red, assert_red_len
-    mov rdi, [rsp]   ;; assert point
-    add rdi, [rsp+8] ;; actual
-    push rdi
-    inc qword [rsp]
-    CCALL assert_str_build, [rdi], 1
-    CCALL assert_str_build, [assert_clear], assert_clear_len
-
-    ;; Print rest
-    mov rcx, [rsp+8]
-    sub rcx, [rsp+8+16]
-    neg rcx
-    pop rdi
-    CCALL assert_str_build, rdi, rcx
+    CCALL .print, assert_str_build ;; Verbatim
     CCALL assert_str_build, assert_nl, 1
 
     add rsp, 8*3
     pop rbp
     ret
-;;
-;;
-;; rdi - enum of the sign
+
+;; Subroutine that defines a template for printing actual range
+;; rdi - print_func
+.print:
+  rept 1 \{ ;; namespace for local labels
+    local outer_scope, assert_offset, range_ptr, size, print_func
+    label outer_scope   at rbp+8+8       ;; skip rbp + ret
+    label assert_offset at outer_scope
+    label range_ptr     at outer_scope+8
+    label size          at outer_scope+16
+
+    push rbp
+    mov rbp, rsp
+
+    push rdi
+    label print_func at rbp-8
+
+    ;; Print matching part
+    mov r10, [print_func]
+    CCALL r10, *[range_ptr], *[assert_offset]
+
+    ;; Print mismatched char
+    CCALL assert_str_build, assert_red, assert_red_len
+    mov rdi, [assert_offset]
+    add rdi, [range_ptr]
+    push rdi
+    inc qword [rsp]
+    CCALL r10, [rdi], 1
+    CCALL assert_str_build, [assert_clear], assert_clear_len
+
+    ;; Print rest
+    mov rcx, [assert_offset]    ;; assert point
+    sub rcx, [size] ;; size
+    neg rcx
+    pop rdi
+
+    CCALL r10, [rdi], rcx
+
+    pop rdi
+    pop rbp
+    ret
+  \}
+
+;; Print expected range
+;; rdi - expected
+;; rsi - assert point
+;; rdx - size
+assert_str_range_expected:
+    push rbp
+    mov rbp, rsp
+
+    push rdx ;; size
+    push rdi ;; range
+    push rsi ;; assert_offset
+
+    CCALL .print, assert_str_hex ;; Hex
+    CCALL assert_str_pad, ' ', 4
+    CCALL .print, assert_str_build ;; Verbatim
+    CCALL assert_str_build, assert_nl, 1
+
+    add rsp, 8*3
+    pop rbp
+    ret
+
+;; Subroutine that defines a template for expected range
+.print:
+  rept 1 \{ ;; namespace for local labels
+    local outer_scope, assert_offset, range_ptr, size
+    label outer_scope   at rbp+8+8       ;; skip rbp + ret
+    label assert_offset at outer_scope   ;; unused!
+    label range_ptr     at outer_scope+8
+    label size          at outer_scope+16
+
+    push rbp
+    mov rbp, rsp
+
+    mov r10, rdi
+    CCALL r10, *[range_ptr], *[size]
+
+    pop rbp
+    ret
+  \}
+
+;; Converts an operation index to string representation
+;; onto the 'assert_str'.
+;; rdi - operation index
 assert_str_op:
     jmp @f
 .signs:
@@ -654,9 +711,10 @@ assert_str_op:
 
     CCALL assert_str_build, rdi, rsi
     ret
-;;
-;;
-;; rdi - enum of the sign
+
+;; Converts a range operation index to string representation
+;; onto the 'assert_str'.
+;; rdi - operation index
 assert_str_ranges_op:
     jmp @f
 .signs:
