@@ -100,7 +100,7 @@ macro ASSERT_STR_HEX_CHAR arg*
 ;; Hardcode a text defined in a virtual block at 'vsrc' label.
 ;; Macro tries to store text using less mov instructions.
 ;;
-macro _BAKE_TEXT dest*, vsrc*, text_len
+macro _BAKE_TEXT dest*, vsrc*, text_len*
  {
   local n, d
   n = 0
@@ -127,12 +127,12 @@ macro _BAKE_TEXT dest*, vsrc*, text_len
   end while
  }
 
-macro _ASSERT_CMP op, value, expected, msg
+macro _ASSERT_CMP op*, value*, expected*, msg*
  {
  DEBUG
  local .ok
     pushfq
-    push rax ;; [NOTE] push dont work on 32 and 8 bit regs
+    push rax
     push r10
 
     mov rax, value
@@ -169,7 +169,6 @@ macro _ASSERT_CMP op, value, expected, msg
     push r10
     push rax
 
-    CCALL assert_str_begin
     CCALL assert_str_build, [assert_red], assert_red_len
     CCALL assert_str_build, [assert_m], assert_m_len
     CCALL assert_str_build, [assert_clear], assert_clear_len
@@ -202,15 +201,15 @@ macro _ASSERT_CMP op, value, expected, msg
     pop r10
     pop rax
     popfq
-  END_DEBUG
+ END_DEBUG
  }
 
-macro _ASSERT_TEST op, value, msg
+macro _ASSERT_TEST op*, value*, msg*
  {
  DEBUG
  local .ok
     pushfq
-    push rax ;; [NOTE] push dont work on 32 and 8 bit regs
+    push rax
 
     mov rax, value
 
@@ -235,7 +234,6 @@ macro _ASSERT_TEST op, value, msg
       STATIC_ASSERT 0, "OP not implemented!"
     end repeat
 
-    CCALL assert_str_begin
     CCALL assert_str_build, [assert_red], assert_red_len
     CCALL assert_str_build, [assert_m], assert_m_len
     CCALL assert_str_build, [assert_clear], assert_clear_len
@@ -264,15 +262,15 @@ macro _ASSERT_TEST op, value, msg
 .ok:
     pop rax
     popfq
-  END_DEBUG
+ END_DEBUG
  }
 
- macro _ASSERT_RANGE op, actual, expected, size, msg
+ macro _ASSERT_RANGE op*, actual*, expected*, size*, msg*
  {
  DEBUG
  local .ok
     pushfq
-    push rdi ;; [NOTE] push dont work on 32 and 8 bit regs
+    push rdi
     push rsi
     push rcx
 
@@ -306,7 +304,7 @@ macro _ASSERT_TEST op, value, msg
 
     sub rcx, size - 1
     neg rcx
-    push rcx ; store mismatch point
+    push rcx ; store assert offset
 
     ; [ASSERT] 
     CCALL assert_str_build, [assert_red], assert_red_len
@@ -338,12 +336,12 @@ macro _ASSERT_TEST op, value, msg
  END_DEBUG
  }
 
-macro _ASSERT_RANGE_CHAR op, actual, char, size, msg
+macro _ASSERT_RANGE_CHAR op*, actual*, char*, size*, msg*
  {
  DEBUG
  local .ok
     pushfq
-    push rdi ;; [NOTE] push dont work on 32 and 8 bit regs
+    push rdi
     push rcx
 
     lea rdi, [actual]
@@ -376,9 +374,7 @@ macro _ASSERT_RANGE_CHAR op, actual, char, size, msg
 
     sub rcx, size - 1
     neg rcx
-    push rcx ; store mismatch point
-
-    CCALL assert_str_begin
+    push rcx ; store assert offset
 
     ; [ASSERT] 
     CCALL assert_str_build, [assert_red], assert_red_len
@@ -535,13 +531,13 @@ assert_str_parse_signed:
 ;; Parse contents of the register as hexadecimal
 ;; into the assert message buffer
 ;; rdi - src,
-;; rsi - length,
+;; rsi - length
 assert_str_hex:
     mov rcx, rsi
     mov rsi, rdi
     test rcx, rcx
     jz .exit
-.l:
+.next:
     push rcx
     push rsi
     lea rdi, [assert_str]
@@ -552,7 +548,7 @@ assert_str_hex:
     pop rcx
     inc rsi
     dec rcx
-    jnz .l
+    jnz .next
 
     mov rax, [assert_str_index]
 .exit:
@@ -597,44 +593,40 @@ assert_str_range_actual:
 ;; Subroutine that defines a template for printing actual range
 ;; rdi - print_func
 .print:
-  rept 1 \{ ;; namespace for local labels
-    local outer_scope, assert_offset, range_ptr, size, print_func
-    label outer_scope   at rbp+8+8       ;; skip rbp + ret
-    label assert_offset at outer_scope
-    label range_ptr     at outer_scope+8
-    label size          at outer_scope+16
+    label .outer_scope   at rbp+8+8       ;; skip rbp + ret
+    label .assert_offset at .outer_scope
+    label .range_ptr     at .outer_scope+8
+    label .size          at .outer_scope+16
 
     push rbp
     mov rbp, rsp
 
     push rdi
-    label print_func at rbp-8
+    label .print_func at rbp-8
 
     ;; Print matching part
-    mov r10, [print_func]
-    CCALL r10, *[range_ptr], *[assert_offset]
+    mov r10, [.print_func]
+    CCALL r10, *[.range_ptr], *[.assert_offset]
 
     ;; Print mismatched char
     CCALL assert_str_build, assert_red, assert_red_len
-    mov rdi, [assert_offset]
-    add rdi, [range_ptr]
+    mov rdi, [.assert_offset]
+    add rdi, [.range_ptr]
     push rdi
     inc qword [rsp]
     CCALL r10, [rdi], 1
     CCALL assert_str_build, [assert_clear], assert_clear_len
 
     ;; Print rest
-    mov rcx, [assert_offset]    ;; assert point
-    sub rcx, [size] ;; size
+    mov rcx, [.assert_offset]
+    sub rcx, [.size]
     neg rcx
     pop rdi
-
     CCALL r10, [rdi], rcx
 
     pop rdi
     pop rbp
     ret
-  \}
 
 ;; Print expected range
 ;; rdi - expected
@@ -659,22 +651,20 @@ assert_str_range_expected:
 
 ;; Subroutine that defines a template for expected range
 .print:
-  rept 1 \{ ;; namespace for local labels
-    local outer_scope, assert_offset, range_ptr, size
-    label outer_scope   at rbp+8+8       ;; skip rbp + ret
-    label assert_offset at outer_scope   ;; unused!
-    label range_ptr     at outer_scope+8
-    label size          at outer_scope+16
+    label .outer_scope   at rbp+8+8       ;; skip rbp + ret
+    label .assert_offset at .outer_scope   ;; unused!
+    label .range_ptr     at .outer_scope+8
+    label .size          at .outer_scope+16
 
     push rbp
     mov rbp, rsp
 
+    ;; call print_func
     mov r10, rdi
-    CCALL r10, *[range_ptr], *[size]
+    CCALL r10, *[.range_ptr], *[.size]
 
     pop rbp
     ret
-  \}
 
 ;; Converts an operation index to string representation
 ;; onto the 'assert_str'.
