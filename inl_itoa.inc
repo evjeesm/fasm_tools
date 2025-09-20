@@ -19,7 +19,7 @@ macro ITOA dest*, src*, bits:64, base:10, signed:0, case:LOWER, term
   end if
  }
 
-macro _ITOA_ASSERT bits, base, signed, case, term
+macro _ITOA_ASSERT bits*, base*, signed*, case*, term
  {
   assert bits >= 1 & bits <= 64 ; bit range exceeded
   assert base <= 36             ; max allowed base exceeded
@@ -37,7 +37,7 @@ macro _ITOA_ASSERT bits, base, signed, case, term
 ;;   rax - src
 ;;   rdi - dest
 ;;   ... - rest registers used in _READ_BITS
-macro _ITOA_SET_DEST_AND_SRC dest, src, bits
+macro _ITOA_SET_DEST_AND_SRC dest*, src*, bits*
  {
   if ~ dest eq rdi
     lea rdi, dest ; setup destination
@@ -67,7 +67,7 @@ macro _ITOA_SET_DEST_AND_SRC dest, src, bits
 ;; Load memory into rax depending on bits amount
 ;; Registers in use:
 ;;   rax - src
-macro _READ_BITS src, bits
+macro _READ_BITS src*, bits*
  {
   if bits <= 8
     mov al, byte src
@@ -85,21 +85,22 @@ macro _READ_BITS src, bits
 ;;   rdi - dest
 ;;   rdx - char counter
 ;;   ... - rest registers used in _ITOA_BODY
-macro _ITOA_BODY_SIGNED bits, base
+macro _ITOA_BODY_SIGNED bits*, base*
  {
+  local .positive, .exit
     push rax ;; save original number
     bt rax, bits-1
-    jnc @f   ;; skip positive
+    jnc .positive  ;; skip sign
     neg rax
     mov byte [rdi], '-'
     inc rdi
-@@:
-    _ITOA_BODY bits,base
+.positive:
+    _ITOA_BODY bits, base
     pop rax
     bt rax, bits-1
-    jnc @f   ;; skip positive
+    jnc .exit ;; skip sign
     inc rdx
-@@:
+.exit:
  }
 
 ;; Registers in use:
@@ -109,12 +110,12 @@ macro _ITOA_BODY_SIGNED bits, base
 ;;   r9  - ascii table
 ;;   r11 - division operand
 ;;   rsi - copy string
-macro _ITOA_BODY bits, base
+macro _ITOA_BODY bits*, base*
  {
-  local .digit, .S
-    jmp @f
-.S: _EMBED_ASCII base, case
-@@:
+  local .code, .digit, .ascii
+    jmp .code
+.ascii: _EMBED_ASCII base, case
+.code:
     xor rcx, rcx
   if bits < 64    ; mask selected bits
     mov rdx, 1
@@ -124,7 +125,7 @@ macro _ITOA_BODY bits, base
   end if
     xor edx, edx ; clear remainder
     mov r11, base
-    lea r9, [.S]
+    lea r9, [.ascii]
 .digit:
     div r11
     dec rsp             ; allocate digit
@@ -163,9 +164,13 @@ macro _ITOA_BODY bits, base
 
 macro _EMBED_ASCII base*, case*
  {
+  local ..ascii_digits
+  virtual at 0
+    ..ascii_digits:: db "0123456789ABCDEFGHIGKLMNOPQRSTUVWXYZ"
+  end virtual
   repeat base
     local ascii
-    load ascii byte from ascii_digits:%-1
+    load ascii byte from ..ascii_digits:%-1
     if ascii > '9' & case eq LOWER
         ascii = ascii + 32
     end if
@@ -173,6 +178,3 @@ macro _EMBED_ASCII base*, case*
   end repeat
  }
 
-virtual at 0
-ascii_digits:: db "0123456789ABCDEFGHIGKLMNOPQRSTUVWXYZ"
-end virtual
