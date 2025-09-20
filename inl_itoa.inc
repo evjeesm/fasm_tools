@@ -136,9 +136,14 @@ macro _ITOA_BODY bits*, base*
     test eax, eax
     jnz .digit
 
-  if base = 16
-    local .zeroes, .no_zeroes, tdigits
-    tdigits = bits / 8 * 2
+  if base in <2,4,8,16,32>
+    local .zeroes, .no_zeroes, base_power, tdigits
+
+    ;; log2(base)
+    base_power = bsf base
+    ;; ceil(bits / base_power)
+    tdigits = (bits+base_power-1) / base_power
+
     mov rax, tdigits
     sub rax, rcx
     jz .no_zeroes
