@@ -136,24 +136,9 @@ macro _ITOA_BODY bits*, base*
     test eax, eax
     jnz .digit
 
+  ;; Pad extra zeroes if base equals 2^n, n >= 1
   if base in <2,4,8,16,32>
-    local .zeroes, .no_zeroes, base_power, tdigits
-
-    ;; log2(base)
-    base_power = bsf base
-    ;; ceil(bits / base_power)
-    tdigits = (bits+base_power-1) / base_power
-
-    mov rax, tdigits
-    sub rax, rcx
-    jz .no_zeroes
-    mov rcx, rax
-.zeroes:
-    dec rsp
-    mov byte [rsp], '0'
-    loop .zeroes
-.no_zeroes:
-    mov rcx, tdigits
+    _PAD_WITH_ZEROES bits, base
   end if
 
     ;; copy from stack to dest
@@ -183,3 +168,23 @@ macro _EMBED_ASCII base*, case*
   end repeat
  }
 
+macro _PAD_WITH_ZEROES bits*, base*
+ {
+    local .zeroes, .no_zeroes, base_power, tdigits
+
+    ;; log2(base)
+    base_power = bsf base
+    ;; ceil(bits / base_power)
+    tdigits = (bits+base_power-1) / base_power
+
+    mov rax, tdigits
+    sub rax, rcx
+    jz .no_zeroes
+    mov rcx, rax
+.zeroes:
+    dec rsp
+    mov byte [rsp], '0'
+    loop .zeroes
+.no_zeroes:
+    mov rcx, tdigits
+ }
