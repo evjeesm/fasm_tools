@@ -85,7 +85,7 @@ forward
                 mov register, val
             end if
         else
-            if val <> 0           ;; non zero
+            if ~ val relativeto 0 | val <> 0           ;; non zero
                 mov register, val
             else                  ;; zero
                 xor register, register
