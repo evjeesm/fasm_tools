@@ -70,14 +70,6 @@ macro ASSERT_STR_ARG [arg*]
   ASSERT_BAKE_TEXT ..text, text_len
  }
 
-macro ASSERT_STR_HEX_CHAR arg*
- {
-    lea rdi, [assert_str]
-    add rdi, [assert_str_index]
-    ITOA rdi, arg, 8, 16, 1, UPPER, ' '
-    add [assert_str_index], rdx
- }
-
 ;;
 ;; Hardcode a text defined in a virtual block at 'vsrc' label.
 ;; Macro tries to store text using less mov instructions.
@@ -399,7 +391,7 @@ macro _ASSERT_RANGE_CHAR op*, actual*, char*, size*, msg*
 
     CCALL assert_str_ranges_op, op
     ASSERT_STR_ARG '(actual:', actual, ', char:', "'", char, "' "
-    ASSERT_STR_HEX_CHAR char
+    CCALL assert_str_format_byte_hex, char
     ASSERT_STR_ARG ')'
     CCALL assert_str_build, [assert_nl], 1
 
@@ -582,6 +574,15 @@ assert_str_build_hex:
 
     mov rax, [assert_str_index]
 .exit:
+    ret
+
+;; Format byte in a hex format
+assert_str_format_byte_hex:
+    mov rsi, rdi
+    lea rdi, [assert_str]
+    add rdi, [assert_str_index]
+    ITOA rdi, rsi, 8, 16, 1, UPPER, ' '
+    add [assert_str_index], rdx
     ret
 
 ;; Appends padding to assert string
