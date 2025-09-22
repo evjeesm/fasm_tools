@@ -559,10 +559,10 @@ assert_str_format_signed:
     mov rax, [assert_str_index]
     ret
 
-;; Format register as a hexadecimal onto 'assert_str'
+;; Format byte array as a hexadecimal onto 'assert_str'
 ;; rdi - src,
 ;; rsi - length
-assert_str_format_hex:
+assert_str_build_hex:
     mov rcx, rsi
     mov rsi, rdi
     test rcx, rcx
@@ -611,7 +611,7 @@ assert_str_range_actual:
     push rdi ;; range
     push rsi ;; assert_offset
 
-    CCALL .print, [assert_str_format_hex] ;; Hex
+    CCALL .print, [assert_str_build_hex] ;; Hex
     CCALL assert_str_pad, ' ', 4
     CCALL .print, [assert_str_build] ;; Verbatim
     CCALL assert_str_build, [assert_nl], 1
@@ -670,7 +670,7 @@ assert_str_range_expected:
     push rdi ;; range
     push rsi ;; assert_offset
 
-    CCALL .print, [assert_str_format_hex] ;; Hex
+    CCALL .print, [assert_str_build_hex] ;; Hex
     CCALL assert_str_pad, ' ', 4
     CCALL .print, [assert_str_build] ;; Verbatim
     CCALL assert_str_build, [assert_nl], 1
