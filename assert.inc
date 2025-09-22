@@ -444,7 +444,7 @@ macro _GEN_RANGE_CHAR_ASSERTS [args*]
  }
 _GEN_RANGE_CHAR_ASSERTS ALL_EQ, ANY_NE, ANY_EQ, ALL_NE
 
-postpone
+macro ASSERT_IMPLEMENTATION
  {
 DEBUG
   segment readable executable
