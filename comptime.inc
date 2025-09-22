@@ -1,3 +1,17 @@
+;;
+;; Classical compile time assert with message.
+;;
+macro STATIC_ASSERT cond*, msg*
+ {
+  if ~(cond)
+     display \
+       ASSERT_COLOR_FG_RED, \
+       "STATIC ASSERT: ", msg, \
+       ASSERT_COLOR_NONE
+     err
+  end if
+ }
+
 ;; Parse compilation target
 if ~ defined RELEASE
   _RELEASE=0 ;; default -> debug mode

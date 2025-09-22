@@ -31,20 +31,6 @@ ASSERT_COLOR_FG_RED equ "[31m"
 ASSERT_COLOR_NONE equ "[0m"
 
 ;;
-;; Classical compile time assert with message.
-;;
-macro STATIC_ASSERT cond*, msg*
- {
-  if ~(cond)
-     display \
-       ASSERT_COLOR_FG_RED, \
-       "STATIC ASSERT: ", msg, \
-       ASSERT_COLOR_NONE
-     err
-  end if
- }
-
-;;
 ;; Puts source code location to an assert message.
 ;;
 macro ASSERT_LOCATION file*, line*
@@ -195,7 +181,7 @@ macro _ASSERT_CMP op*, value*, expected*, msg*
     CCALL assert_str_build, [assert_red], assert_red_len
     ASSERT_STR_ARG msg
     CCALL assert_str_build, [assert_clear], assert_clear_len
-    CCALL assert_str_build, assert_nl, 1
+    CCALL assert_str_build, [assert_nl], 1
 
     ERROR [assert_str], [assert_str_index]
 
@@ -318,7 +304,7 @@ macro _ASSERT_TEST op*, value*, msg*
     ASSERT_LOCATION __FILE__, __LINE__
     CCALL assert_str_ranges_op, op
     ASSERT_STR_ARG '(actual:', actual, ', expected:', expected ,')'
-    CCALL assert_str_build, assert_nl, 1
+    CCALL assert_str_build, [assert_nl], 1
 
     CCALL assert_str_range_actual, [actual], *[rsp], size
     CCALL assert_str_range_expected, [expected], *[rsp], size
@@ -326,7 +312,7 @@ macro _ASSERT_TEST op*, value*, msg*
     CCALL assert_str_build, [assert_red], assert_red_len
     ASSERT_STR_ARG msg
     CCALL assert_str_build, [assert_clear], assert_clear_len
-    CCALL assert_str_build, assert_nl, 1
+    CCALL assert_str_build, [assert_nl], 1
 
     ERROR [assert_str], [assert_str_index]
     pop rcx
@@ -391,13 +377,13 @@ macro _ASSERT_RANGE_CHAR op*, actual*, char*, size*, msg*
     ASSERT_STR_ARG '(actual:', actual, ', char:', "'", char, "' "
     ASSERT_STR_HEX_CHAR char
     ASSERT_STR_ARG ')'
-    CCALL assert_str_build, assert_nl, 1
+    CCALL assert_str_build, [assert_nl], 1
 
     CCALL assert_str_range_actual, [actual], *[rsp], size
     CCALL assert_str_build, [assert_red], assert_red_len
     ASSERT_STR_ARG msg
     CCALL assert_str_build, [assert_clear], assert_clear_len
-    CCALL assert_str_build, assert_nl, 1
+    CCALL assert_str_build, [assert_nl], 1
 
     ERROR [assert_str], [assert_str_index]
     pop rcx
