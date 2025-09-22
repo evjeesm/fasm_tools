@@ -1,9 +1,13 @@
 format elf64 executable 3
 
+BUILD_TYPE equ "EXECUTABLE"
+
 include 'inl_itoa.inc'
 include 'call.inc'
 include 'io.inc'
+
 include 'assert.inc'
+ASSERT_IMPLEMENTATION
 
 segment executable readable
 entry _start
@@ -29,14 +33,14 @@ _start:
     ASSERT_POSITIVE 1, "Should be positive"
     ASSERT_ZERO 0, "Should be zero"
     ASSERT_POSITIVE +1, "Should be positive"
-    ASSERT_RANGE_ALL_NE src, dest, src_len, "Hoho"
     ASSERT_RANGE_CHAR_ALL_EQ src, 'H', src_len, "Hoho"
+    ASSERT_RANGE_ALL_NE src, dest, src_len, "Hoho"
 
     SYSCALL EXIT, 0
 
 
 segment readable writable
-src  db "Hello, World", 10
+src  db "aello, World", 10
 src_len = $ - src
 
 dest db "Hello, World", 10

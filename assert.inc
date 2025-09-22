@@ -31,6 +31,7 @@ ASSERT_STR_LEN = 1024
 
 ASSERT_COLOR_FG_RED equ "[31m"
 ASSERT_COLOR_NONE equ "[0m"
+ASSERT_NL equ 10
 
 ;;
 ;; Puts source code location to an assert message.
@@ -45,7 +46,7 @@ macro ASSERT_LOCATION file*, line*
 
   ASSERT_BAKE_TEXT ..text, text_len
   CCALL assert_str_format, line
-  ASSERT_STR_ARG "] "
+  ASSERT_STR_LITERAL "] "
  }
 
 ;;
@@ -63,6 +64,24 @@ macro ASSERT_STR_ARG [arg*]
       ;; (negative literal case)
         db \`a
     \}
+ common
+      text_len = $
+    end virtual
+
+  ASSERT_BAKE_TEXT ..text, text_len
+ }
+
+;;
+;;
+;;
+macro ASSERT_STR_LITERAL [arg*]
+ {
+ common
+  local ..text, text_len
+    virtual at 0
+      ..text::
+ forward
+        db arg
  common
       text_len = $
     end virtual
@@ -105,7 +124,7 @@ macro ASSERT_BAKE_TEXT vsrc*, text_len*
  {
   local n, d
   n = 0
-  d = 4
+  d = 8
   while n < text_len
     repeat (text_len-n)/d
       local _STORE
@@ -174,9 +193,7 @@ macro _ASSERT_CMP op*, value*, expected*, msg*
     push r10
     push rax
 
-    CCALL assert_str_build, [assert_red], assert_red_len
-    CCALL assert_str_build, [assert_m], assert_m_len
-    CCALL assert_str_build, [assert_clear], assert_clear_len
+    CCALL assert_print_message
     ASSERT_LOCATION __FILE__, __LINE__
 
     ASSERT_STR_ARG value
@@ -184,21 +201,16 @@ macro _ASSERT_CMP op*, value*, expected*, msg*
     CCALL assert_str_op, op
     ASSERT_STR_ARG expected
 
-    CCALL assert_str_build, [assert_comma], 2
-    CCALL assert_str_build, [assert_obr], 1
+    ASSERT_STR_LITERAL ",("
     CCALL assert_str_format, *[rsp] ;; value
 
     CCALL assert_str_op, op
     CCALL assert_str_format, *[rsp+8] ;; expected
-    CCALL assert_str_build, [assert_cbr], 1
-    CCALL assert_str_build, [assert_space], 1
+    ASSERT_STR_LITERAL ") "
 
-    CCALL assert_str_build, [assert_red], assert_red_len
-    ASSERT_STR_ARG msg
-    CCALL assert_str_build, [assert_clear], assert_clear_len
-    CCALL assert_str_build, [assert_nl], 1
+    ASSERT_STR_LITERAL ASSERT_COLOR_FG_RED, msg, ASSERT_COLOR_NONE, ASSERT_NL
 
-    ERROR [assert_str], [assert_str_index]
+    CCALL assert_str_flush
 
     add rsp, 8*5 ;; clean stack
     SYSCALL EXIT, -1
@@ -239,28 +251,19 @@ macro _ASSERT_TEST op*, value*, msg*
       STATIC_ASSERT 0, `op#" is not implemented yet!"
     end repeat
 
-    CCALL assert_str_build, [assert_red], assert_red_len
-    CCALL assert_str_build, [assert_m], assert_m_len
-    CCALL assert_str_build, [assert_clear], assert_clear_len
+    CCALL assert_print_message
 
     ASSERT_STR_ARG value
 
     CCALL assert_str_op, op
 
-    CCALL assert_str_build, [assert_comma], 2
-    CCALL assert_str_build, [assert_obr], 1
+    ASSERT_STR_LITERAL ", ("
     CCALL assert_str_format_signed, rax
-
     CCALL assert_str_op, op
-    CCALL assert_str_build, [assert_cbr], 1
-    CCALL assert_str_build, [assert_space], 1
+    ASSERT_STR_LITERAL ") ", ASSERT_COLOR_FG_RED, \
+        msg, ASSERT_COLOR_NONE, ASSERT_NL
 
-    CCALL assert_str_build, [assert_red], assert_red_len
-    ASSERT_STR_ARG msg
-    CCALL assert_str_build, [assert_clear], assert_clear_len
-    CCALL assert_str_build, assert_nl, 1
-
-    ERROR [assert_str], [assert_str_index]
+    CCALL assert_str_flush
 
     add rsp, 8*2 ;; clean stack
     SYSCALL EXIT, -1
@@ -311,26 +314,21 @@ macro _ASSERT_TEST op*, value*, msg*
     neg rcx
     push rcx ; store assert offset
 
-    ; [ASSERT] 
-    CCALL assert_str_build, [assert_red], assert_red_len
-    CCALL assert_str_build, [assert_rm], assert_rm_len
-    CCALL assert_str_build, [assert_clear], assert_clear_len
+    CCALL assert_print_message
 
     ASSERT_LOCATION __FILE__, __LINE__
 
     CCALL assert_str_ranges_op, op
     ASSERT_STR_ARG '(actual:', actual, ', expected:', expected ,')'
-    CCALL assert_str_build, [assert_nl], 1
+    ASSERT_STR_LITERAL ASSERT_NL
 
     CCALL assert_str_range_actual, [actual], *[rsp], size
     CCALL assert_str_range_expected, [expected], *[rsp], size
 
-    CCALL assert_str_build, [assert_red], assert_red_len
-    ASSERT_STR_ARG msg
-    CCALL assert_str_build, [assert_clear], assert_clear_len
-    CCALL assert_str_build, [assert_nl], 1
+    ASSERT_STR_LITERAL ASSERT_COLOR_FG_RED, msg, ASSERT_COLOR_NONE, ASSERT_NL
 
-    ERROR [assert_str], [assert_str_index]
+    CCALL assert_str_flush
+
     pop rcx
     add rsp, 8*4 ;; clean stack
     SYSCALL EXIT, -1
@@ -382,26 +380,20 @@ macro _ASSERT_RANGE_CHAR op*, actual*, char*, size*, msg*
     neg rcx
     push rcx ; store assert offset
 
-    ; [ASSERT] 
-    CCALL assert_str_build, [assert_red], assert_red_len
-    CCALL assert_str_build, [assert_rm], assert_rm_len
-    CCALL assert_str_build, [assert_clear], assert_clear_len
+    CCALL assert_print_message
 
     ASSERT_LOCATION __FILE__, __LINE__
 
     CCALL assert_str_ranges_op, op
     ASSERT_STR_ARG '(actual:', actual, ', char:', "'", char, "' "
     CCALL assert_str_format_byte_hex, char
-    ASSERT_STR_ARG ')'
-    CCALL assert_str_build, [assert_nl], 1
+    ASSERT_STR_LITERAL ')', ASSERT_NL
 
     CCALL assert_str_range_actual, [actual], *[rsp], size
-    CCALL assert_str_build, [assert_red], assert_red_len
-    ASSERT_STR_ARG msg
-    CCALL assert_str_build, [assert_clear], assert_clear_len
-    CCALL assert_str_build, [assert_nl], 1
+    ASSERT_STR_LITERAL ASSERT_COLOR_FG_RED, msg, ASSERT_COLOR_NONE, ASSERT_NL
 
-    ERROR [assert_str], [assert_str_index]
+    CCALL assert_str_flush
+
     pop rcx
     add rsp, 8*3 ;; clean stack
     SYSCALL EXIT, -1
@@ -465,6 +457,13 @@ macro ASSERT_IMPLEMENTATION
 DEBUG
 CODE_SEGMENT
 
+assert_print_message:
+    ASSERT_STR_LITERAL \
+        ASSERT_COLOR_FG_RED, \
+        "[ASSERT] ", \
+        ASSERT_COLOR_NONE
+    ret
+
 ;; Copy amount of src bytes to dest at specific offset
 ;; Args:
 ;; rdi - dest,
@@ -482,6 +481,12 @@ assert_strcpy:
 assert_str_begin:
     mov [assert_str_index], 0
     ret
+
+assert_str_flush:
+    ERROR [assert_str], [assert_str_index]
+    CCALL assert_str_begin
+    ret
+
 
 ;; Copy string to assert message buffer advancing the index.
 ;; rdi - src,
@@ -515,7 +520,7 @@ assert_str_build_reg:
     shr rdi, 8
     inc rbx
     loop .copy
-.end:
+
     add [assert_str_index], r10 ;; update index
 
     pop rbx
@@ -615,7 +620,7 @@ assert_str_range_actual:
     CCALL .print, [assert_str_build_hex] ;; Hex
     CCALL assert_str_pad, ' ', 4
     CCALL .print, [assert_str_build] ;; Verbatim
-    CCALL assert_str_build, [assert_nl], 1
+    ASSERT_STR_LITERAL ASSERT_NL
 
     add rsp, 8*3
     pop rbp
@@ -624,7 +629,7 @@ assert_str_range_actual:
 ;; Subroutine that defines a template for printing actual range
 ;; rdi - print_func
 .print:
-    label .outer_scope   at rbp+8+8       ;; skip rbp + ret
+    label .outer_scope   at rbp+8+8       ;; skip rbp, ret
     label .assert_offset at .outer_scope
     label .range_ptr     at .outer_scope+8
     label .size          at .outer_scope+16
@@ -632,31 +637,32 @@ assert_str_range_actual:
     push rbp
     mov rbp, rsp
 
+    push rbx ;; callee-preserved
     push rdi
-    label .print_func at rbp-8
+    label .print_func at rbp-16
 
     ;; Print matching part
-    mov r10, [.print_func]
-    CCALL r10, *[.range_ptr], *[.assert_offset]
+    mov rbx, [.print_func]
+    CCALL rbx, *[.range_ptr], *[.assert_offset]
 
     ;; Print mismatched char
-    CCALL assert_str_build, [assert_red], assert_red_len
+    ASSERT_STR_LITERAL ASSERT_COLOR_FG_RED
     mov rdi, [.assert_offset]
     add rdi, [.range_ptr]
     push rdi
     inc qword [rsp]
-    CCALL r10, [rdi], 1
-    CCALL assert_str_build, [assert_clear], assert_clear_len
+    CCALL rbx, [rdi], 1
+    ASSERT_STR_LITERAL ASSERT_COLOR_NONE
 
     ;; Print rest
     mov rcx, [.assert_offset]
     sub rcx, [.size]
     neg rcx
     pop rdi
-    CCALL r10, [rdi], rcx
+    CCALL rbx, [rdi], rcx
 
-    pop rdi
-    pop rbp
+    pop rbx
+    leave
     ret
 
 ;; Print expected range
@@ -674,15 +680,14 @@ assert_str_range_expected:
     CCALL .print, [assert_str_build_hex] ;; Hex
     CCALL assert_str_pad, ' ', 4
     CCALL .print, [assert_str_build] ;; Verbatim
-    CCALL assert_str_build, [assert_nl], 1
+    ASSERT_STR_LITERAL ASSERT_NL
 
-    add rsp, 8*3
-    pop rbp
+    leave
     ret
 
 ;; Subroutine that defines a template for expected range
 .print:
-    label .outer_scope   at rbp+8+8       ;; skip rbp + ret
+    label .outer_scope   at rbp+8+8        ;; skip rbp, ret
     label .assert_offset at .outer_scope   ;; unused!
     label .range_ptr     at .outer_scope+8
     label .size          at .outer_scope+16
@@ -691,10 +696,10 @@ assert_str_range_expected:
     mov rbp, rsp
 
     ;; call print_func
-    mov r10, rdi
-    CCALL r10, *[.range_ptr], *[.size]
+    mov rax, rdi
+    CCALL rax, *[.range_ptr], *[.size]
 
-    pop rbp
+    leave
     ret
 
 ;; Converts an operation index to string representation
@@ -778,15 +783,6 @@ range_op_to_str_table:
     db assert_ranges_any_eq_len
     db assert_ranges_all_ne_len
 
-assert_red db ASSERT_COLOR_FG_RED
-assert_red_len = $ - assert_red
-
-assert_clear db ASSERT_COLOR_NONE
-assert_clear_len = $ - assert_clear
-
-assert_m db "[ASSERT] "
-assert_m_len = $ - assert_m
-
 assert_zero:
 assert_eq db " == "
 assert_eq_len = $ - assert_eq
@@ -817,16 +813,6 @@ assert_ge_len = $ - assert_ge
 assert_le db " <= "
 assert_le_len = $ - assert_le
 
-assert_comma db ","
-assert_space db " "
-
-assert_obr db "("
-assert_cbr db ")"
-
-assert_nl db 10
-
-assert_rm db "[ASSERT RANGE] "
-assert_rm_len = $ - assert_rm
 assert_ranges_all_eq db "All equal "
 assert_ranges_all_eq_len = $ - assert_ranges_all_eq
 assert_ranges_any_ne db "Any different "
