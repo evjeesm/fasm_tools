@@ -1,4 +1,6 @@
 include 'comptime.inc'
+include 'call.inc'
+include 'inl_itoa.inc'
 
 ;; Usage: (in routine)
 ;;   ASSERT_EQ value, expected, msg
@@ -447,7 +449,7 @@ _GEN_RANGE_CHAR_ASSERTS ALL_EQ, ANY_NE, ANY_EQ, ALL_NE
 macro ASSERT_IMPLEMENTATION
  {
 DEBUG
-  segment readable executable
+CODE_SEGMENT
 
 ;; Copy amount of src bytes to dest at specific offset
 ;; Args:
@@ -565,10 +567,10 @@ assert_str_range_actual:
     push rdi ;; range
     push rsi ;; assert_offset
 
-    CCALL .print, assert_str_format_hex ;; Hex
+    CCALL .print, [assert_str_format_hex] ;; Hex
     CCALL assert_str_pad, ' ', 4
-    CCALL .print, assert_str_build ;; Verbatim
-    CCALL assert_str_build, assert_nl, 1
+    CCALL .print, [assert_str_build] ;; Verbatim
+    CCALL assert_str_build, [assert_nl], 1
 
     add rsp, 8*3
     pop rbp
@@ -593,7 +595,7 @@ assert_str_range_actual:
     CCALL r10, *[.range_ptr], *[.assert_offset]
 
     ;; Print mismatched char
-    CCALL assert_str_build, assert_red, assert_red_len
+    CCALL assert_str_build, [assert_red], assert_red_len
     mov rdi, [.assert_offset]
     add rdi, [.range_ptr]
     push rdi
@@ -624,10 +626,10 @@ assert_str_range_expected:
     push rdi ;; range
     push rsi ;; assert_offset
 
-    CCALL .print, assert_str_format_hex ;; Hex
+    CCALL .print, [assert_str_format_hex] ;; Hex
     CCALL assert_str_pad, ' ', 4
-    CCALL .print, assert_str_build ;; Verbatim
-    CCALL assert_str_build, assert_nl, 1
+    CCALL .print, [assert_str_build] ;; Verbatim
+    CCALL assert_str_build, [assert_nl], 1
 
     add rsp, 8*3
     pop rbp
@@ -654,19 +656,60 @@ assert_str_range_expected:
 ;; onto the 'assert_str'.
 ;; rdi - operation index
 assert_str_op:
-    jmp @f
+    ;; NOTE NOT PIC: reg + symbol encodes symbol as 32S
+    ;; movzx rsi, byte [rdi + .signs.sizes]
+    ;; lea rdi, [.signs+(rdi*8)]
+    ;; mov rdi, [dword edi]
+
+    ;; PIC complient:
+    lea rax, [op_to_str_table.sizes]  ;; load table base
+    add rax, rdi
+    movzx rsi, byte [rax]
+
+    lea rax, [op_to_str_table.signs]
+    lea rdx, [rax + rdi*8]
+    mov rdi, [rdx]
+    add rdi, rax
+
+    CCALL assert_str_build, rdi, rsi
+    ret
+
+;; Converts a range operation index to string representation
+;; onto the 'assert_str'.
+;; rdi - operation index
+assert_str_ranges_op:
+    ;; NOTE NOT PIC: reg + symbol encodes symbol as 32S
+    ;; movzx rsi, byte [rdi + .signs.sizes]
+    ;; lea rdi, [.signs+(rdi*8)]
+    ;; mov rdi, [dword edi]
+
+    ;; PIC complient:
+    lea rax, [range_op_to_str_table.sizes]  ;; load table base
+    add rax, rdi
+    movzx rsi, byte [rax]
+
+    lea rax, [range_op_to_str_table.signs]
+    lea rdx, [rax + rdi*8]
+    mov rdi, [rdx]
+    add rdi, rax
+
+    CCALL assert_str_build, rdi, rsi
+    ret
+
+RODATA_SEGMENT
+op_to_str_table:
 .signs:
-    dq assert_eq
-    dq assert_ne
-    dq assert_gt
-    dq assert_lt
-    dq assert_ge
-    dq assert_le
-    dq assert_zero
-    dq assert_not_zero
-    dq assert_positive
-    dq assert_negative
-.signs.sizes:
+    dq assert_eq - .signs
+    dq assert_ne - .signs
+    dq assert_gt - .signs
+    dq assert_lt - .signs
+    dq assert_ge - .signs
+    dq assert_le - .signs
+    dq assert_zero - .signs
+    dq assert_not_zero - .signs
+    dq assert_positive - .signs
+    dq assert_negative - .signs
+.sizes:
     db assert_eq_len
     db assert_ne_len
     db assert_gt_len
@@ -677,39 +720,19 @@ assert_str_op:
     db assert_not_zero_len
     db assert_positive_len
     db assert_negative_len
-@@:
 
-    movzx rsi, byte [rdi + .signs.sizes]
-    lea rdi, [.signs+(rdi*8)]
-    mov rdi, [dword edi]
-
-    CCALL assert_str_build, rdi, rsi
-    ret
-
-;; Converts a range operation index to string representation
-;; onto the 'assert_str'.
-;; rdi - operation index
-assert_str_ranges_op:
-    jmp @f
+range_op_to_str_table:
 .signs:
-    dq assert_ranges_all_eq
-    dq assert_ranges_any_ne
-    dq assert_ranges_any_eq
-    dq assert_ranges_all_ne
-.signs.sizes:
+    dq assert_ranges_all_eq - .signs
+    dq assert_ranges_any_ne - .signs
+    dq assert_ranges_any_eq - .signs
+    dq assert_ranges_all_ne - .signs
+.sizes:
     db assert_ranges_all_eq_len
     db assert_ranges_any_ne_len
     db assert_ranges_any_eq_len
     db assert_ranges_all_ne_len
-@@:
-    movzx rsi, byte [rdi + .signs.sizes]
-    lea rdi, [.signs+(rdi*8)]
-    mov rdi, [dword edi]
 
-    CCALL assert_str_build, rdi, rsi
-    ret
-
-  segment readable
     assert_red db ASSERT_COLOR_FG_RED
     assert_red_len = $ - assert_red
 
@@ -768,8 +791,8 @@ assert_str_ranges_op:
     assert_ranges_all_ne db "All not equal "
     assert_ranges_all_ne_len = $ - assert_ranges_all_ne
 
-  segment readable writable
-    assert_str_index dq 0
+  BSS_SEGMENT
+    assert_str_index rq 1
     assert_str rb ASSERT_STR_LEN
 END_DEBUG
  }

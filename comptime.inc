@@ -12,6 +12,45 @@ macro STATIC_ASSERT cond*, msg*
   end if
  }
 
+
+macro CODE_SEGMENT
+ {
+  FMT "CODE SEGMENT: " BUILD_TYPE %NL
+  STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
+  if BUILD_TYPE eq 'EXECUTABLE'
+    segment readable executable
+  else
+    section '.text' executable
+  end if
+ }
+macro RODATA_SEGMENT
+ {
+  STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
+  if BUILD_TYPE eq 'EXECUTABLE'
+    segment readable
+  else
+    section '.rodata' executable
+  end if
+ }
+ macro DATA_SEGMENT
+ {
+  STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
+  if BUILD_TYPE eq 'EXECUTABLE'
+    segment readable writable
+  else
+    section '.data' writable
+  end if
+ }
+ macro BSS_SEGMENT
+ {
+  STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
+  if BUILD_TYPE eq 'EXECUTABLE'
+    segment readable writable
+  else
+    section '.bss' writable
+  end if
+ }
+
 ;; Parse compilation target
 if ~ defined RELEASE
   _RELEASE=0 ;; default -> debug mode
