@@ -733,67 +733,68 @@ range_op_to_str_table:
     db assert_ranges_any_eq_len
     db assert_ranges_all_ne_len
 
-    assert_red db ASSERT_COLOR_FG_RED
-    assert_red_len = $ - assert_red
+assert_red db ASSERT_COLOR_FG_RED
+assert_red_len = $ - assert_red
 
-    assert_clear db ASSERT_COLOR_NONE
-    assert_clear_len = $ - assert_clear
+assert_clear db ASSERT_COLOR_NONE
+assert_clear_len = $ - assert_clear
 
-    assert_m db "[ASSERT] "
-    assert_m_len = $ - assert_m
+assert_m db "[ASSERT] "
+assert_m_len = $ - assert_m
 
-    assert_zero:
-    assert_eq db " == "
-    assert_eq_len = $ - assert_eq
+assert_zero:
+assert_eq db " == "
+assert_eq_len = $ - assert_eq
     db "0"
-    assert_zero_len = $ - assert_zero
+assert_zero_len = $ - assert_zero
 
-    assert_not_zero:
-    assert_ne db " != "
-    assert_ne_len = $ - assert_ne
+assert_not_zero:
+assert_ne db " != "
+assert_ne_len = $ - assert_ne
     db "0"
-    assert_not_zero_len = $ - assert_not_zero
+assert_not_zero_len = $ - assert_not_zero
 
-    assert_positive:
-    assert_gt db " > "
-    assert_gt_len = $ - assert_gt
+assert_positive:
+assert_gt db " > "
+assert_gt_len = $ - assert_gt
     db "0"
-    assert_positive_len = $ - assert_positive
+assert_positive_len = $ - assert_positive
 
-    assert_negative:
-    assert_lt db " < "
-    assert_lt_len = $ - assert_lt
+assert_negative:
+assert_lt db " < "
+assert_lt_len = $ - assert_lt
     db "0"
-    assert_negative_len = $ - assert_negative
+assert_negative_len = $ - assert_negative
 
-    assert_ge db " >= "
-    assert_ge_len = $ - assert_ge
+assert_ge db " >= "
+assert_ge_len = $ - assert_ge
 
-    assert_le db " <= "
-    assert_le_len = $ - assert_le
+assert_le db " <= "
+assert_le_len = $ - assert_le
 
-    assert_comma db ","
-    assert_space db " "
+assert_comma db ","
+assert_space db " "
 
-    assert_obr db "("
-    assert_cbr db ")"
+assert_obr db "("
+assert_cbr db ")"
 
-    assert_nl db 10
+assert_nl db 10
 
-    assert_rm db "[ASSERT RANGE] "
-    assert_rm_len = $ - assert_rm
-    assert_ranges_all_eq db "All equal "
-    assert_ranges_all_eq_len = $ - assert_ranges_all_eq
-    assert_ranges_any_ne db "Any different "
-    assert_ranges_any_ne_len = $ - assert_ranges_any_ne
-    assert_ranges_any_eq db "Any equal "
-    assert_ranges_any_eq_len = $ - assert_ranges_any_eq
-    assert_ranges_all_ne db "All not equal "
-    assert_ranges_all_ne_len = $ - assert_ranges_all_ne
+assert_rm db "[ASSERT RANGE] "
+assert_rm_len = $ - assert_rm
+assert_ranges_all_eq db "All equal "
+assert_ranges_all_eq_len = $ - assert_ranges_all_eq
+assert_ranges_any_ne db "Any different "
+assert_ranges_any_ne_len = $ - assert_ranges_any_ne
+assert_ranges_any_eq db "Any equal "
+assert_ranges_any_eq_len = $ - assert_ranges_any_eq
+assert_ranges_all_ne db "All not equal "
+assert_ranges_all_ne_len = $ - assert_ranges_all_ne
 
-  BSS_SEGMENT
-    assert_str_index rq 1
-    assert_str rb ASSERT_STR_LEN
+BSS_SEGMENT
+assert_str_index rq 1
+assert_str rb ASSERT_STR_LEN
+
 END_DEBUG
  }
 
