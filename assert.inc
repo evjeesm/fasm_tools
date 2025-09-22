@@ -796,5 +796,5 @@ assert_str_index rq 1
 assert_str rb ASSERT_STR_LEN
 
 END_DEBUG
- }
+ } ;; ASSERT_IMPLEMENTATION
 
