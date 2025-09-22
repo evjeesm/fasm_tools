@@ -43,13 +43,7 @@ macro ASSERT_LOCATION file*, line*
     text_len = $
   end virtual
 
-  lea rdi, [assert_str]
-  add rdi, [assert_str_index]
-
-  _BAKE_TEXT rdi, ..text, text_len
-
-  add [assert_str_index], text_len
-
+  ASSERT_BAKE_TEXT ..text, text_len
   CCALL assert_str_format, line
   ASSERT_STR_ARG "] "
  }
@@ -73,11 +67,7 @@ macro ASSERT_STR_ARG [arg*]
       text_len = $
     end virtual
 
-  lea rdi, [assert_str]
-  add rdi, [assert_str_index]
-
-  _BAKE_TEXT rdi, ..text, text_len
-  add [assert_str_index], text_len
+  ASSERT_BAKE_TEXT ..text, text_len
  }
 
 macro ASSERT_STR_HEX_CHAR arg*
@@ -118,6 +108,37 @@ macro _BAKE_TEXT dest*, vsrc*, text_len*
     d = d / 2
   end while
  }
+
+macro ASSERT_BAKE_TEXT vsrc*, text_len*
+ {
+  local n, d
+  n = 0
+  d = 4
+  while n < text_len
+    repeat (text_len-n)/d
+      local _STORE
+      macro _STORE src, size, offset
+      \{
+       local chunk
+          if d = 8
+            load chunk qword from src:offset
+          else if d = 4
+            load chunk dword from src:offset
+          else if d = 2
+            load chunk word from src:offset
+          else if d = 1
+            load chunk byte from src:offset
+          end if
+          CCALL assert_str_build_reg, chunk, d
+      \}
+      _STORE vsrc, d, n
+
+      n = n + d
+    end repeat
+    d = d / 2
+  end while
+ }
+
 
 macro _ASSERT_CMP op*, value*, expected*, msg*
  {
@@ -304,6 +325,7 @@ macro _ASSERT_TEST op*, value*, msg*
     CCALL assert_str_build, [assert_clear], assert_clear_len
 
     ASSERT_LOCATION __FILE__, __LINE__
+
     CCALL assert_str_ranges_op, op
     ASSERT_STR_ARG '(actual:', actual, ', expected:', expected ,')'
     CCALL assert_str_build, [assert_nl], 1
@@ -483,6 +505,28 @@ assert_str_build:
     call assert_strcpy
 
     add [assert_str_index], r8
+    ret
+
+
+;; Copy bytes from a register to assert message buffer
+;; rdi - src bytes in a register
+;; rsi - amount of bytes to copy [1..8]
+assert_str_build_reg:
+    push rbx
+    lea rbx, [assert_str]
+    add rbx, [assert_str_index]
+    mov rcx, rsi
+    mov r10, rsi
+    cld
+.copy:
+    mov [rbx], dil
+    shr rdi, 8
+    inc rbx
+    loop .copy
+.end:
+    add [assert_str_index], r10 ;; update index
+
+    pop rbx
     ret
 
 ;; Format register as an unsigned integer onto 'assert_str'
