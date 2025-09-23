@@ -5,9 +5,9 @@ macro STATIC_ASSERT cond*, msg*
  {
   if ~(cond)
      display \
-       ASSERT_COLOR_FG_RED, \
+       "[31m", \
        "STATIC ASSERT: ", msg, \
-       ASSERT_COLOR_NONE
+       "[0m"
      err
   end if
  }
