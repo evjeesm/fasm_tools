@@ -1,6 +1,21 @@
 include 'comptime.inc'
 include 'call.inc'
 include 'inl_itoa.inc'
+include 'io.inc'
+
+API assert_print_message
+API assert_str_begin
+API assert_str_flush
+API assert_str_build
+API assert_str_build_reg
+API assert_str_op
+API assert_str_ranges_op
+API assert_str_format
+API assert_str_format_signed
+API assert_str_format_byte_hex
+API assert_str_pad
+API assert_str_range_actual
+API assert_str_range_expected
 
 ;; Usage: (in routine)
 ;;   ASSERT_EQ value, expected, msg
@@ -452,7 +467,7 @@ macro _GEN_RANGE_CHAR_ASSERTS [args*]
  }
 _GEN_RANGE_CHAR_ASSERTS ALL_EQ, ANY_NE, ANY_EQ, ALL_NE
 
-macro ASSERT_IMPLEMENTATION
+macro __IMPLEMENTATION__
  {
 DEBUG
 CODE_SEGMENT
@@ -827,5 +842,5 @@ assert_str_index rq 1
 assert_str rb ASSERT_STR_LEN
 
 END_DEBUG
- } ;; ASSERT_IMPLEMENTATION
+ } ;; __IMPLEMENTATION__
 

@@ -1,3 +1,6 @@
+if ~ definite _IO_INC_
+_IO_INC_ = 1
+
 READ = 0
 WRITE = 1
 OPEN = 2
@@ -24,7 +27,7 @@ STDERR = 2
 ;; Read from file descriptor.
 ;; (OBSOLETE use SYSCALL instead)
 ;;
-macro READ fd*, addr*, size*
+macro _READ fd*, addr*, size*
  {
     mov rax, READ
     mov rdi, fd
@@ -36,7 +39,7 @@ macro READ fd*, addr*, size*
 ;; Write to file descriptor, without error checks.
 ;; (OBSOLETE use SYSCALL instead)
 ;;
-macro WRITE fd*, addr*, size*
+macro _WRITE fd*, addr*, size*
  {
     mov rax, WRITE
     mov rdi, fd
@@ -48,7 +51,7 @@ macro WRITE fd*, addr*, size*
 ;; Write with error checks.
 ;; (OBSOLETE use 'write_all' function)
 ;;
-macro WRITE_ALL fd*, addr*, size*
+macro _WRITE_ALL fd*, addr*, size*
  {
   local .again, .error, .exit
     mov rdi, fd
@@ -75,7 +78,7 @@ macro WRITE_ALL fd*, addr*, size*
  }
 
 
-macro PRINT addr*, size* { WRITE STDOUT, addr, size }
+macro PRINT addr*, size* { _WRITE STDOUT, addr, size }
 
 ;; print inline message (message will be allocated inplace in the code)
 macro PRINT_INL [bytes*]
@@ -88,7 +91,7 @@ macro PRINT_INL [bytes*]
     PRINT [.msg], .msg#.size
  }
 
-macro ERROR addr*, size* { WRITE STDERR, addr, size }
+macro ERROR addr*, size* { _WRITE STDERR, addr, size }
 
 ;; print inline message (message will be allocated inplace in the code)
 macro ERROR_INL [bytes*]
@@ -102,7 +105,7 @@ macro ERROR_INL [bytes*]
  }
 
 ;; System exit. (OBSOLETE, use SYSCALL)
-macro EXIT code*
+macro _EXIT code*
  {
     mov rax, EXIT
     mov rdi, code
@@ -116,10 +119,12 @@ struc BUFFER [args*]
     .size = $ - .
  }
 
-macro NANOSLEEP timespec*
+macro _NANOSLEEP timespec*
  {
    mov rax, NANOSLEEP  ; Syscall number for nanosleep
    lea rdi, timespec   ; Pointer to timespec structure
    xor rsi, rsi        ; NULL (no remaining 
    syscall
  }
+
+end if

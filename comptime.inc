@@ -1,4 +1,39 @@
 ;;
+;; Target formats:
+;;
+macro FORMAT_ELF64_OBJECT
+ {
+  format ELF64
+  BUILD_TYPE equ 'OBJECT'
+ }
+
+macro FORMAT_ELF64_EXECUTABLE
+ {
+  format ELF64 executable 3
+  BUILD_TYPE equ 'EXECUTABLE'
+ }
+
+;;
+;; Target agnostic entry point
+;;
+macro MAIN entry_point*
+ {
+  repeat 1
+  match symbol:, entry_point \{
+    match 'OBJECT', BUILD_TYPE \\{
+      public symbol
+    \\}
+    match 'EXECUTABLE', BUILD_TYPE \\{
+      entry symbol
+    \\}
+    symbol:
+  break
+  \}
+  STATIC_ASSERT 0, "Usage: MAIN <symbol>: \n "
+  end repeat
+ }
+
+;;
 ;; Classical compile time assert with message.
 ;;
 macro STATIC_ASSERT cond*, msg*
@@ -12,10 +47,80 @@ macro STATIC_ASSERT cond*, msg*
   end if
  }
 
+;;
+;; Macro that includes file with implementation
+;;
+macro IMPL file*, prefix
+ {
+  include file
+  __IMPLEMENTATION__
+  irpv symbol, __SYMBOLS__
+  \{
+    if BUILD_TYPE eq 'OBJECT'
+      if ~ prefix eq
+        label prefix\#symbol at symbol
+        public prefix\#symbol
+      else
+        public symbol
+      end if
+    end if
+  \}
+ }
 
+;;
+;; Will be implemented only in DEBUG mode
+;;
+macro IMPL_FOR_DEBUG file*, prefix
+ {
+  DEBUG
+  IMPL file, prefix
+  END_DEBUG
+ }
+
+;;
+;; Includes file and adds extern symbols
+;; when compiling an object
+;;
+macro USE file*, prefix
+ {
+  include file
+  if BUILD_TYPE eq 'OBJECT'
+    irpv symbol, __SYMBOLS__
+    \{
+      if ~ prefix eq
+        extrn prefix\#symbol
+      else
+        extrn symbol
+      end if
+    \}
+  end if
+ }
+
+
+;;
+;; Will be used only in DEBUG mode
+;;
+macro USE_FOR_DEBUG file*, prefix
+ {
+  DEBUG
+  USE file, prefix
+  END_DEBUG
+ }
+
+
+;;
+;; Pushes symbols into an API list
+;;
+macro API symbol*
+ {
+  __SYMBOLS__ equ symbol
+ }
+
+;;
+;; Target agnostic segment/section marking
+;;
 macro CODE_SEGMENT
  {
-  FMT "CODE SEGMENT: " BUILD_TYPE %NL
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
   if BUILD_TYPE eq 'EXECUTABLE'
     segment readable executable
@@ -23,6 +128,7 @@ macro CODE_SEGMENT
     section '.text' executable
   end if
  }
+
 macro RODATA_SEGMENT
  {
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
@@ -32,6 +138,7 @@ macro RODATA_SEGMENT
     section '.rodata' executable
   end if
  }
+
  macro DATA_SEGMENT
  {
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
@@ -41,6 +148,7 @@ macro RODATA_SEGMENT
     section '.data' writable
   end if
  }
+
  macro BSS_SEGMENT
  {
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
