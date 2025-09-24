@@ -1,19 +1,13 @@
-format elf64 executable 3
-
-BUILD_TYPE equ "EXECUTABLE"
+include 'comptime.inc'
+FORMAT_ELF64_EXECUTABLE
 
 include 'inl_itoa.inc'
 include 'call.inc'
-include 'io.inc'
 
-include 'assert.inc'
-ASSERT_IMPLEMENTATION
+IMPL_FOR_DEBUG 'assert.inc'
 
-segment executable readable
-entry _start
-
-
-_start:
+CODE_SEGMENT
+MAIN _start:
     mov rax, 70
     mov rdx, 70
 
@@ -38,8 +32,7 @@ _start:
 
     SYSCALL EXIT, 0
 
-
-segment readable writable
+RODATA_SEGMENT
 src  db "aello, World", 10
 src_len = $ - src
 

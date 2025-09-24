@@ -8,7 +8,7 @@ entry _start
 macro TO_STR dest,src { ITOA dest,src,8,16,0,UPPER,0xA }
 
 _start:
-    mov rax, -0xA
+    mov rax, 0xA
     TO_STR [buf], rax
     PRINT  [buf], rdx
 

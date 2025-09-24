@@ -21,6 +21,8 @@ _start:
     syscall
 
     mov qword [fs:0], 1000
+    mov rax, [fs:0x30]
+
 
 .exit:
     mov rdi, rax

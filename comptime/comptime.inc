@@ -1,14 +1,23 @@
+include 'fmt.inc'
+
+;; Assamble line and print
+macro TRACE line*
+ {
+  FMT 'TRACE ' __FILE__ '[' %D __LINE__ ']: '
+  FMT_EXPR <line>
+ }
+
 ;;
 ;; Classical compile time assert with message.
 ;;
 macro STATIC_ASSERT cond*, msg*
  {
   if ~(cond)
-     display \
-       "[31m", \
-       "STATIC ASSERT: ", msg, \
-       "[0m"
-     err
+    display \
+      "[31m", \
+      "STATIC ASSERT: ", msg, \
+      "[0m"
+    err
   end if
  }
 

@@ -6,7 +6,11 @@
 
 !comptime/
 !comptime/tests/
+!os/
+!os/tests/
+!lib/
+!lib/tests/
 
-!historical
+!historical/
 
 !.gitignore
