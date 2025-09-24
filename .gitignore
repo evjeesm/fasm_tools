@@ -4,6 +4,9 @@
 !*.inc
 !Makefile
 
+!comptime/
+!comptime/tests/
+
 !historical
 
 !.gitignore
