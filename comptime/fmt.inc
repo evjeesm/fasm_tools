@@ -18,7 +18,7 @@ PRECISION equ 3
 macro FMT [fmt*]
  {
  common
-  local parse, last_val, type, negative, precision
+  local _PARSE, last_val, type, negative, precision
   define %S 0 ; string
   define %D 1 ; signed integer
   define %U 2 ; unsigned integer
@@ -26,7 +26,7 @@ macro FMT [fmt*]
   define %F 4 ; double
   define %P 5 ; double precision
   negative = 0
-  macro parse type*, val*
+  macro _PARSE type*, val*
   \{
     local _val
     if negative = 1
@@ -70,7 +70,7 @@ macro FMT [fmt*]
         assert defined last_val
         val = last_val
       end if
-      parse type, val
+      _PARSE type, val
     end if
   else ; + or -
     if \`val eq '-'
@@ -84,6 +84,17 @@ macro FMT [fmt*]
   \\}
   \}
   restore %S, %D, %U, %X, %F, %P
+ }
+
+;; Format code expression as is
+macro FMT_EXPR [exp*]
+ {
+ forward
+  irps e, exp
+  \{
+   display \`e, ' '
+  \}
+  display 10
  }
 
 macro DISP_STR var*
@@ -156,7 +167,7 @@ macro DISP_HEX num*
  }
 
 _MANTISA_LEN = 52
-_MANTISA_MASK = (1 shl _MANTISA_LEN) - 1
+_MANTISA_MASK = (1 shl (_MANTISA_LEN+1)) - 1
 _EXP_BIAS = 1023
 _EXP_LEN = 11
 _EXP_MASK = (1 shl _EXP_LEN) - 1
@@ -176,6 +187,8 @@ macro DISP_DOUBLE num*, precision:PRECISION
     _DOUBLE_INF sign
   else if (exp = _EXP_MASK & mantisa <> 0)
     display 'NaN'
+  else if exp = 0 & mantisa = 0
+    display '0.0'
   else
     if sign
       display '-'
