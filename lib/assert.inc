@@ -463,7 +463,7 @@ assert_str_begin:
     ret
 
 assert_str_flush:
-    ERROR [assert_str], [assert_str_index]
+    ERROR [assert_str], *[assert_str_index]
     CCALL assert_str_begin
     ret
 

@@ -2,7 +2,8 @@ include 'call.inc'
 
 macro PRINT addr*, size* { SYSCALL WRITE, STDOUT, addr, size }
 
-;; print inline message (message will be allocated inplace in the code)
+;; Print inline message
+;; (message will be allocated inplace in the code)
 macro PRINT_INL [bytes*]
  {
  common
@@ -15,7 +16,8 @@ macro PRINT_INL [bytes*]
 
 macro ERROR addr*, size* { SYSCALL WRITE, STDERR, addr, size }
 
-;; print inline message (message will be allocated inplace in the code)
+;; Print inline message
+;; (message will be allocated inplace in the code)
 macro ERROR_INL [bytes*]
  {
  common
@@ -26,6 +28,10 @@ macro ERROR_INL [bytes*]
     ERROR [.msg], .msg#.size
  }
 
+macro PRINT addr*, size* { SYSCALL WRITE, STDOUT, addr, size }
+macro ERROR addr*, size* { SYSCALL WRITE, STDERR, addr, size }
+
+;; Stores bytes and its size (comptime)
 struc BUFFER [args*]
  {
  common
