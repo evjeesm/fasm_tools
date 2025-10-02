@@ -1,7 +1,7 @@
 include 'comptime.inc'
 include 'call.inc'
 include 'inl_itoa.inc'
-include 'io.inc'
+include 'inl_io.inc'
 
 API assert_print_message
 API assert_str_begin
