@@ -8,6 +8,9 @@ macro TRACE line*
   line
  }
 
+;; Assamble line
+macro NO_TRACE line* { line }
+
 ;;
 ;; Classical compile time assert with message.
 ;;
