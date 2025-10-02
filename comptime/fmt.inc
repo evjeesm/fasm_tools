@@ -19,12 +19,14 @@ macro FMT [fmt*]
  {
  common
   local _PARSE, last_val, type, negative, precision
-  define %S 0 ; string
-  define %D 1 ; signed integer
-  define %U 2 ; unsigned integer
-  define %X 3 ; hexadecimal
-  define %F 4 ; double
-  define %P 5 ; double precision
+  define %R 0  ; raw string
+  define %S 1  ; string
+  define %D 2  ; signed integer
+  define %U 3  ; unsigned integer
+  define %X 4  ; hexadecimal
+  define %0X 5 ; hexadecimal with prefix
+  define %F 6  ; double
+  define %P 7  ; double precision
   negative = 0
   macro _PARSE type*, val*
   \{
@@ -36,11 +38,15 @@ macro FMT [fmt*]
     end if
     if type = %S
       DISP_STR val
+    else if type = %R
+      DISP_RAW_STR val
     else if type = %D
       DISP_DEC _val, SIGNED
     else if type = %U
       DISP_DEC _val, UNSIGNED
     else if type = %X
+      DISP_HEX _val, '', ' ', 4
+    else if type = %0X
       DISP_HEX _val
     else if type = %F
       if defined precision
@@ -61,7 +67,7 @@ macro FMT [fmt*]
   if ~ \`val in <'+','-'> ; not + or -
     if val eqtype '' ; text
       display val
-    else if \`val in <'%S','%D','%U','%X','%F','%P'>
+    else if \`val in <'%R','%S','%D','%U','%X','%0X','%F','%P'>
       type = val
     else if val eq %NL
       display 10
@@ -83,7 +89,7 @@ macro FMT [fmt*]
   end if
   \\}
   \}
-  restore %S, %D, %U, %X, %F, %P
+  restore %R, %S, %D, %U, %X, %0X, %F, %P, %R
  }
 
 ;; Format code expression as is
@@ -100,16 +106,21 @@ macro FMT_EXPR [exp*]
 
 macro DISP_STR var*
  {
+  display '"'
+  DISP_RAW_STR var
+  display '"'
+ }
+
+macro DISP_RAW_STR var*
+ {
   local s,i
   s = var
   i = 0
-  display '"'
   while i < 8
     display s and 0xFF
     s = s shr 8
     i = i+1
   end while
-  display '"'
  }
 
 macro DISP_DEC num*, sign:UNSIGNED
@@ -144,11 +155,11 @@ macro DISP_DEC num*, sign:UNSIGNED
   end if
  }
 
-macro DISP_HEX num*
+macro DISP_HEX num*, base_prefix:'0x', sep:'_', sep_freq:4
  {
   local n,nib,i,shft,d
   n = (num) and FASM_MAX_INT
-  display '0x'
+  display base_prefix
   if n <> 0
     bit = bsr n
   else
@@ -164,6 +175,9 @@ macro DISP_HEX num*
       d = d+'A'-'9'-1
     end if
     display d
+    if i mod sep_freq = 0 & i <> 0
+      display sep
+    end if
   end while
  }
 

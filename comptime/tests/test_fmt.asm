@@ -5,7 +5,7 @@ FMT 'Hello, '
 FMT 'world' %NL
 
 ;; String output
-FMT %X 0x65_72_65_68_74_20_69_68 ' --> ' %S . %NL
+FMT %0X 0x65_72_65_68_74_20_69_68 ' --> ' %S . %NL
 
 ;; Format expressions
 FMT_EXPR <mov rax, A>,\
