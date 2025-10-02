@@ -137,31 +137,22 @@ macro _BAKE_TEXT dest*, vsrc*, text_len*
 
 macro ASSERT_BAKE_TEXT vsrc*, text_len*
  {
-  local n, d
-  n = 0
-  d = 8
-  while n < text_len
-    repeat (text_len-n)/d
-      local _STORE
-      macro _STORE src, size, offset
-      \{
-       local chunk
-          if d = 8
-            load chunk qword from src:offset
-          else if d = 4
-            load chunk dword from src:offset
-          else if d = 2
-            load chunk word from src:offset
-          else if d = 1
-            load chunk byte from src:offset
-          end if
-          CCALL assert_str_build_reg, chunk, d
-      \}
-      _STORE vsrc, d, n
-
-      n = n + d
+  local offset, chunk, chunk_sz
+  offset = 0
+  chunk_sz = 8
+  local _STORE
+  macro _STORE chunk \{ load chunk byte from vsrc:offset \}
+  macro _STORE chunk \{ load chunk word from vsrc:offset \}
+  macro _STORE chunk \{ load chunk dword from vsrc:offset \}
+  macro _STORE chunk \{ load chunk qword from vsrc:offset \}
+  while offset < text_len
+    repeat (text_len-offset)/chunk_sz
+      _STORE chunk
+      CCALL assert_str_build_reg, chunk, size
+      offset = offset + chunk_sz
     end repeat
-    d = d / 2
+    purge _STORE
+    chunk_sz = chunk_sz / 2
   end while
  }
 
