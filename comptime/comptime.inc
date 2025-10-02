@@ -5,6 +5,7 @@ macro TRACE line*
  {
   FMT 'TRACE ' __FILE__ '[' %D __LINE__ ']: '
   FMT_EXPR <line>
+  line
  }
 
 ;;
