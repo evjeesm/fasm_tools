@@ -1,7 +1,7 @@
 TEST_SOURCES := $(wildcard *.asm)
 TEST_TARGETS := $(TEST_SOURCES:%.asm=%)
 
-export INCLUDE := ..
+export INCLUDE := ..;../../os/
 
 SHELL := /bin/bash
 

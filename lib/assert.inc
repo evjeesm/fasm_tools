@@ -106,24 +106,28 @@ macro ASSERT_STR_LITERAL [arg*]
 
 macro ASSERT_BAKE_TEXT vsrc*, text_len*
  {
-  local _STORE, offset, chunk, chunk_sz
+  local offset, chunk_sz
   offset = 0
   chunk_sz = 8
-  macro _STORE chunk \{
-    if chunk_sz = 8
-      load chunk qword from vsrc:offset
-    else if chunk_sz = 4
-      load chunk dword from vsrc:offset
-    else if chunk_sz = 2
-      load chunk word  from vsrc:offset
-    else if chunk_sz = 1
-      load chunk byte  from vsrc:offset
-    end if
-    CCALL assert_str_build_reg, chunk, chunk_sz
-  \}
   while offset < text_len
     repeat (text_len-offset)/chunk_sz
-      _STORE chunk
+      local _STORE
+      macro _STORE src, size, off
+      \{
+       local chunk
+        if size = 8
+          load chunk qword from src:off
+        else if size = 4
+          load chunk dword from src:off
+        else if size = 2
+          load chunk word from src:off
+        else if size = 1
+          load chunk byte from src:off
+        end if
+        CCALL assert_str_build_reg, chunk, size
+      \}
+      _STORE vsrc, chunk_sz, offset
+
       offset = offset + chunk_sz
     end repeat
     chunk_sz = chunk_sz / 2
