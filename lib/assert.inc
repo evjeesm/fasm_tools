@@ -3,6 +3,8 @@ include 'call.inc'
 include 'inl_itoa.inc'
 include 'inl_io.inc'
 
+IMPL_IF_MAIN_FILE ELF64_OBJECT
+
 API assert_print_message
 API assert_str_begin
 API assert_str_flush

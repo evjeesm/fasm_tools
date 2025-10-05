@@ -3,6 +3,8 @@ include 'call.inc'
 include 'signal.inc'
 include 'ucontext.inc'
 
+IMPL_IF_MAIN_FILE ELF64_OBJECT
+
 struc JMP_BUF
  {
 common

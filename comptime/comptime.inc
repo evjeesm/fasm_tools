@@ -14,8 +14,9 @@ macro NO_TRACE line* { line }
 ;;
 ;; Classical compile time assert with message.
 ;;
-macro STATIC_ASSERT cond*, msg*
+macro STATIC_ASSERT cond*, [msg*]
  {
+ common
   if ~(cond)
     display \
       "[31m", \
@@ -46,12 +47,14 @@ macro FORMAT_ELF64_OBJECT
  {
   format ELF64
   BUILD_TYPE equ 'OBJECT'
+  __MAIN_FILE__ equ __FILE__
  }
 
 macro FORMAT_ELF64_EXECUTABLE
  {
   format ELF64 executable 3
   BUILD_TYPE equ 'EXECUTABLE'
+  __MAIN_FILE__ equ __FILE__
  }
 
 ;;
@@ -80,18 +83,8 @@ macro MAIN entry_point*
 macro IMPL file*, prefix
  {
   include file
+  EXPORT_API prefix
   __IMPLEMENTATION__
-  irpv symbol, __SYMBOLS__
-  \{
-    if BUILD_TYPE eq 'OBJECT'
-      if ~ prefix eq
-        label prefix\#symbol at symbol
-        public prefix\#symbol
-      else
-        public symbol
-      end if
-    end if
-  \}
  }
 
 ;;
@@ -105,12 +98,53 @@ macro IMPL_FOR_DEBUG file*, prefix
  }
 
 ;;
+;; Facilitate building *.inc library files
+;;
+macro IMPL_SELF prefix
+ {
+  EXPORT_API prefix
+  __IMPLEMENTATION__
+ }
+
+macro IMPL_IF_MAIN_FILE format*
+ {
+  STATIC_ASSERT `format eq 'ELF64_OBJECT' | `format eq 'ELF64_EXECUTABLE', \
+      "Only OBJECT/EXECUTABLE allowed! given: ", `format
+  postpone \{
+  if ~ defined __MAIN_FILE__
+      FORMAT_\#format
+      IMPL_SELF
+  end if
+  \}
+}
+
+macro EXPORT_API prefix
+ {
+  if BUILD_TYPE eq 'OBJECT'
+  irpv symbol, __SYMBOLS__
+  \{
+    if ~ prefix eq
+      label prefix\#symbol at symbol
+      public prefix\#symbol
+    else
+      public symbol
+    end if
+  \}
+  end if
+ }
+
+;;
 ;; Includes file and adds extern symbols
 ;; when compiling an object
 ;;
 macro USE file*, prefix
  {
   include file
+  IMPORT_API prefix
+ }
+
+macro IMPORT_API prefix
+ {
   if BUILD_TYPE eq 'OBJECT'
     irpv symbol, __SYMBOLS__
     \{
@@ -122,7 +156,6 @@ macro USE file*, prefix
     \}
   end if
  }
-
 
 ;;
 ;; Will be used only in DEBUG mode
