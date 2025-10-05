@@ -33,10 +33,10 @@ else
   _RELEASE = RELEASE
 end if
 
-; Mark code block as debug block
-; that can be excluded from release build.
-; Debug mode is default.
-; To compile in release mode: fasm -d RELEASE=1 code.asm
+;; Mark code block as debug block
+;; that can be excluded from release build.
+;; Debug mode is default.
+;; To compile in release mode: fasm -d RELEASE=1 code.asm
 macro DEBUG { if _RELEASE = 0 }
 macro END_DEBUG { end if }
 
@@ -98,14 +98,8 @@ macro IMPL_FOR_DEBUG file*, prefix
  }
 
 ;;
-;; Facilitate building *.inc library files
+;; Compile standalone library file.
 ;;
-macro IMPL_SELF prefix
- {
-  EXPORT_API prefix
-  __IMPLEMENTATION__
- }
-
 macro IMPL_IF_MAIN_FILE format*
  {
   STATIC_ASSERT `format eq 'ELF64_OBJECT' | `format eq 'ELF64_EXECUTABLE', \
@@ -117,6 +111,15 @@ macro IMPL_IF_MAIN_FILE format*
   end if
   \}
 }
+
+;;
+;; Facilitate building *.inc standalone library files
+;;
+macro IMPL_SELF prefix
+ {
+  EXPORT_API prefix
+  __IMPLEMENTATION__
+ }
 
 macro EXPORT_API prefix
  {
