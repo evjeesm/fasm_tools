@@ -63,7 +63,7 @@ macro VTEXT_BAKE dest*, vsrc*, BAKE_CHUNK*, until:?, init_offset:0, init_chunk_s
   else
     _until = until
   end if
-  STATIC_ASSERT until <= vsrc#.len, "Size should not exceed vtext bounds!"
+  STATIC_ASSERT _until <= vsrc#.len, "Size should not exceed vtext bounds!"
 
   while offset < _until
     repeat (_until - offset) / chunk_sz
