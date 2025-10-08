@@ -9,7 +9,11 @@ macro VTEXT name*, [args*]
  common
   virtual at 0
     name:: db args
-    name#.len = $
+    if `name eq '@@' ;; TMP VTEXT
+      @b#.len = $
+    else
+      name#.len = $
+    end if
   end virtual
  }
 
@@ -17,7 +21,11 @@ macro VTEXT_FILE name*, filepath*
  {
   virtual at 0
     name:: file filepath
-    name#.len = $
+    if `name eq '@@' ;; TMP VTEXT
+      @b#.len = $
+    else
+      name#.len = $
+    end if
   end virtual
  }
 
@@ -32,11 +40,11 @@ macro VTEXT_APPEND name*, [args*]
  }
 
 ;; Enlarge vtext with additional 'size'
-macro VTEXT_EXPAND vsrc*, size*
+macro VTEXT_EXPAND name*, size*
  {
-  virtual vsrc
+  virtual name
     rb size
-    vsrc#.len = $
+    name#.len = $
   end virtual
  }
 
