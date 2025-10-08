@@ -40,8 +40,34 @@ macro VTEXT_EXPAND vsrc*, size*
   end virtual
  }
 
+;; Generic bake that takes user baking strategy.
+;; Param BAKE_CHUNK - is a macro of form:
+;;   `BAKE_CHUNK dest, vsrc, size, offset`
+;;
+macro VTEXT_BAKE dest*, vsrc*, BAKE_CHUNK*, until:?, init_offset:0, init_chunk_sz:8
+ {
+  local offset, chunk_sz, _until
+  offset = init_offset
+  chunk_sz = init_chunk_sz
+
+  if until eq ?
+    _until = vsrc#.len
+  else
+    _until = until
+  end if
+  STATIC_ASSERT until <= vsrc#.len, "Size should not exceed vtext bounds!"
+
+  while offset < _until
+    repeat (_until - offset) / chunk_sz
+      BAKE_CHUNK dest, vsrc, chunk_sz, offset
+      offset = offset + chunk_sz
+    end repeat
+    chunk_sz = chunk_sz / 2
+  end while
+ }
+
 ;; Generate immediate movs of the virutal text to a destination
-macro VTEXT_BAKE dest*, vsrc*
+macro VTEXT_BAKE_MOVS dest*, vsrc*
  {
   local n, d, text_len
   n = 0
@@ -170,32 +196,35 @@ macro VTEXT_WRITE vdest*, offset*, vsrc*
   end repeat
  }
 
-macro VTEXT_FMT vsrc*, offset*, size*
+macro VTEXT_DISPLAY vsrc*, offset:0, until:?
  {
-  local _READ, total, off, chunk, chunk_sz
-  total = vsrc#.len - offset
-  if total < 0
-    total = 0
-  else if total > size
-    total = size
-  end if
-  chunk_sz = 8
-  off = offset
-  macro _READ chunk \{ load chunk byte from vsrc:off \}
-  macro _READ chunk \{ load chunk word from vsrc:off \}
-  macro _READ chunk \{ load chunk dword from vsrc:off\}
-  macro _READ chunk \{ load chunk qword from vsrc:off\}
-  while chunk_sz > 0
-    repeat total / chunk_sz
-      _READ chunk
-      FMT %R chunk
-      off= off + chunk_sz
-      total = total - chunk_sz
+  local _PRINT, _until
+  macro _PRINT dest, src, _size, _offset
+  \{
+    local chunk
+    if _size = 8
+      load chunk qword from src:_offset
+    else if _size = 4
+      load chunk dword from src:_offset
+    else if _size = 2
+      load chunk word from src:_offset
+    else if _size = 1
+      load chunk byte from src:_offset
+    end if
+     STATIC_ASSERT _size <> 0, "Chunk size should never be zero!"
+    repeat _size
+      display (chunk shr (8*(%-1))) and 0xFF
     end repeat
-    chunk_sz = chunk_sz / 2
-    purge _READ
-  end while
-  FMT %NL
+  \}
+
+  if until eq ?
+    _until = vsrc#.len
+  else
+    _until = until
+  end if
+
+  VTEXT_BAKE _, vsrc, _PRINT, _until, offset
+  display 10
  }
 
 macro VTEXT_LOAD_CHAR vsrc*, index*, output*

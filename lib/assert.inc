@@ -2,6 +2,7 @@ include 'comptime.inc'
 include 'call.inc'
 include 'inl_itoa.inc'
 include 'inl_io.inc'
+include 'vtext.inc'
 
 IMPL_IF_MAIN_FILE ELF64_OBJECT
 
@@ -50,20 +51,32 @@ ASSERT_COLOR_FG_RED equ "[31m"
 ASSERT_COLOR_NONE equ "[0m"
 ASSERT_NL equ 10
 
+macro ASSERT_BAKE_CHUNK dest*, src*, size*, offset*
+ {
+  local chunk
+   if size = 8
+     load chunk qword from src:offset
+   else if size = 4
+     load chunk dword from src:offset
+   else if size = 2
+     load chunk word from src:offset
+   else if size = 1
+     load chunk byte from src:offset
+   end if
+   CCALL assert_str_build_reg, chunk, size
+ }
+
 ;;
 ;; Puts source code location to an assert message.
 ;;
 macro ASSERT_LOCATION file*, line*
  {
- local ..text, text_len
-  virtual at 0
-    ..text:: db file, "["
-    text_len = $
-  end virtual
-
-  ASSERT_BAKE_TEXT ..text, text_len
-  CCALL assert_str_format, line
-  ASSERT_STR_LITERAL "] "
+ local ..location, RENDER
+  VTEXT ..location, file, "["
+  macro RENDER char* \{ VTEXT_APPEND ..location, char \}
+  FORMAT_DEC line, RENDER, UNSIGNED
+  VTEXT_APPEND ..location, "] "
+  VTEXT_BAKE _, ..location, ASSERT_BAKE_CHUNK
  }
 
 ;;
@@ -113,23 +126,7 @@ macro ASSERT_BAKE_TEXT vsrc*, text_len*
   chunk_sz = 8
   while offset < text_len
     repeat (text_len-offset)/chunk_sz
-      local _STORE
-      macro _STORE src, size, off
-      \{
-       local chunk
-        if size = 8
-          load chunk qword from src:off
-        else if size = 4
-          load chunk dword from src:off
-        else if size = 2
-          load chunk word from src:off
-        else if size = 1
-          load chunk byte from src:off
-        end if
-        CCALL assert_str_build_reg, chunk, size
-      \}
-      _STORE vsrc, chunk_sz, offset
-
+      ASSERT_BAKE_CHUNK _, vsrc, chunk_sz, offset
       offset = offset + chunk_sz
     end repeat
     chunk_sz = chunk_sz / 2

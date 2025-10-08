@@ -155,6 +155,38 @@ macro DISP_DEC num*, sign:UNSIGNED
   end if
  }
 
+macro FORMAT_DEC num*, RENDER*, sign:UNSIGNED
+ {
+  local orig,n,dv,dg
+  orig = (num) and FASM_MAX_INT
+  if sign = 1
+    if orig <> 0 & (bsr orig) = (_BIT_LEN - 1)
+      RENDER '-'
+      orig = not orig and FASM_MAX_INT + 1
+    end if
+  end if
+  n = orig
+  dv = 1
+  if n = 0
+    RENDER '0'
+  else
+    while n > 0
+      if (dv > 1 shl (_BIT_LEN - 1))
+        RENDER '1'
+      else
+        dv = dv*10
+      end if
+      n = n/10
+    end while
+    n = orig
+    while dv > 1
+      dv = dv/10
+      dg = '0' + ((n/dv) mod 10)
+      RENDER dg
+    end while
+  end if
+ }
+
 macro DISP_HEX num*, base_prefix:'0x', sep:'_', sep_freq:4
  {
   local n,nib,i,shft,d
