@@ -85,20 +85,9 @@ macro ASSERT_LOCATION file*, line*
 macro ASSERT_STR_ARG [arg*]
  {
  common
-  local ..text, text_len
-    virtual at 0
-      ..text::
- forward
-    irps a, arg \{
-      ;; capturing down whole expression
-      ;; (negative literal case)
-        db \`a
-    \}
- common
-      text_len = $
-    end virtual
-
-  ASSERT_BAKE_TEXT ..text, text_len
+  VTEXT @@
+  VTEXT_APPEND_AS_IS @b, arg
+  VTEXT_BAKE _, @b, ASSERT_BAKE_CHUNK
  }
 
 ;;
@@ -107,16 +96,8 @@ macro ASSERT_STR_ARG [arg*]
 macro ASSERT_STR_LITERAL [arg*]
  {
  common
-  local ..text, text_len
-    virtual at 0
-      ..text::
- forward
-        db arg
- common
-      text_len = $
-    end virtual
-
-  ASSERT_BAKE_TEXT ..text, text_len
+  VTEXT @@, arg
+  VTEXT_BAKE _, @b, ASSERT_BAKE_CHUNK
  }
 
 macro ASSERT_BAKE_TEXT vsrc*, text_len*
@@ -179,7 +160,7 @@ macro _ASSERT_CMP op*, value*, expected*, msg*
     CCALL assert_print_message
     ASSERT_LOCATION __FILE__, __LINE__
 
-    ASSERT_STR_ARG value
+    ASSERT_STR_ARG value, ' hello'
 
     CCALL assert_str_op, op
     ASSERT_STR_ARG expected

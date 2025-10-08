@@ -4,11 +4,14 @@
 
 
 ;; Creates a text in a virtual address space
-macro VTEXT name*, [args*]
+macro VTEXT name*, [arg]
  {
  common
   virtual at 0
-    name:: db args
+    name::
+    if ~ arg eq
+        db arg
+    end if
     if `name eq '@@' ;; TMP VTEXT
       @b#.len = $
     else
@@ -30,14 +33,25 @@ macro VTEXT_FILE name*, filepath*
  }
 
 ;; Append to a previously defined VTEXT
-macro VTEXT_APPEND name*, [args*]
+macro VTEXT_APPEND name*, [arg*]
  {
  common
   virtual name
-    db args
+    db arg
     name#.len = $
   end virtual
  }
+
+;; Append to a previously defined VTEXT
+macro VTEXT_APPEND_AS_IS name*, [arg*]
+ {
+ forward
+  irps a, arg
+  \{
+    VTEXT_APPEND name, \`a
+  \}
+ }
+
 
 ;; Enlarge vtext with additional 'size'
 macro VTEXT_EXPAND name*, size*
@@ -157,12 +171,12 @@ macro VTEXT_SLICE vsrc*, _beg:0, _end:-1
   vsrc#.len = stop
  }
 
-macro VTEXT_SET vdest*, [args*]
+macro VTEXT_SET vdest*, [arg*]
  {
  common
   local tmp, tmp_size
   virtual at 0
-    tmp:: db args
+    tmp:: db arg
     tmp_size = $
   end virtual
   if vdest#.len < tmp_size
