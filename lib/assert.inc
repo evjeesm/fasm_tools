@@ -71,10 +71,10 @@ macro ASSERT_BAKE_CHUNK dest*, src*, size*, offset*
 ;;
 macro ASSERT_LOCATION file*, line*
  {
- local ..location, RENDER
+ local ..location, _RENDER
   VTEXT ..location, file, "["
-  macro RENDER char* \{ VTEXT_APPEND ..location, char \}
-  FORMAT_DEC line, RENDER, UNSIGNED
+  macro _RENDER char* \{ VTEXT_APPEND ..location, char \}
+  FORMAT_DEC line, _RENDER, UNSIGNED
   VTEXT_APPEND ..location, "] "
   VTEXT_BAKE _, ..location, ASSERT_BAKE_CHUNK
  }
@@ -91,7 +91,7 @@ macro ASSERT_STR_ARG [arg*]
  }
 
 ;;
-;;
+;; Bake string literal.
 ;;
 macro ASSERT_STR_LITERAL [arg*]
  {
@@ -99,21 +99,6 @@ macro ASSERT_STR_LITERAL [arg*]
   VTEXT @@, arg
   VTEXT_BAKE _, @b, ASSERT_BAKE_CHUNK
  }
-
-macro ASSERT_BAKE_TEXT vsrc*, text_len*
- {
-  local offset, chunk_sz
-  offset = 0
-  chunk_sz = 8
-  while offset < text_len
-    repeat (text_len-offset)/chunk_sz
-      ASSERT_BAKE_CHUNK _, vsrc, chunk_sz, offset
-      offset = offset + chunk_sz
-    end repeat
-    chunk_sz = chunk_sz / 2
-  end while
- }
-
 
 macro _ASSERT_CMP op*, value*, expected*, msg*
  {
@@ -176,7 +161,7 @@ macro _ASSERT_CMP op*, value*, expected*, msg*
 
     CCALL assert_str_flush
 
-    add rsp, 8*5 ;; clean stack
+    leave
     SYSCALL EXIT, -1
 .ok:
     pop r10
@@ -229,7 +214,7 @@ macro _ASSERT_TEST op*, value*, msg*
 
     CCALL assert_str_flush
 
-    add rsp, 8*2 ;; clean stack
+    leave
     SYSCALL EXIT, -1
 .ok:
     pop rax
@@ -294,7 +279,7 @@ macro _ASSERT_TEST op*, value*, msg*
     CCALL assert_str_flush
 
     pop rcx
-    add rsp, 8*4 ;; clean stack
+    leave
     SYSCALL EXIT, -1
 .ok:
     pop rcx
@@ -446,11 +431,11 @@ assert_str_begin:
     mov [assert_str_index], 0
     ret
 
+;; Outputs an assert message to the error stream
 assert_str_flush:
     ERROR [assert_str], *[assert_str_index]
     CCALL assert_str_begin
     ret
-
 
 ;; Copy string to assert message buffer advancing the index.
 ;; rdi - src,
@@ -467,7 +452,6 @@ assert_str_build:
 
     add [assert_str_index], r8
     ret
-
 
 ;; Copy bytes from a register to assert message buffer
 ;; rdi - src bytes in a register
