@@ -1,3 +1,6 @@
+if ~ definite _REGS_AMD64_INC_
+_REGS_AMD64_INC_ equ 1
+
 X64_REGS equ rax,rbx,rdx,rcx,rsi,rdi,rsp,rbp,\
              r8,r9,r10,r11,r12,r13,r14,r15
 
@@ -10,4 +13,4 @@ X16_REGS equ ax,bx,dx,cx,si,di,sp,bp,\
 X8_REGS  equ al,ah,bl,bh,dl,dh,cl,ch,sil,dil,spl,bpl,\
              r8b,r9b,r10b,r11b,r12b,r13b,r14b,r15b
 
-
+end if ;; _REGS_AMD64_INC_
