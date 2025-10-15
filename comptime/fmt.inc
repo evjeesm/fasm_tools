@@ -1,3 +1,6 @@
+if ~ definite _FMT_INC_
+_FMT_INC_ equ 1
+
 FASM_MAX_INT equ 0xffff_ffff_ffff_ffff
 SIGNED equ 1
 UNSIGNED equ 0
@@ -308,3 +311,5 @@ macro _DOUBLE_FLOATING_POINT_NOTATION actual_exp*, mantisa*, precision*
     fractional_part = fractional_part and _MANTISA_MASK
   end repeat
  }
+
+ end if ;; _FMT_INC_
