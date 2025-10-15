@@ -6,6 +6,8 @@
 
 !comptime/
 !comptime/tests/
+!comptime/examples/
+!comptime/examples/**
 !os/
 !os/tests/
 !lib/
