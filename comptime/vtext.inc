@@ -1,3 +1,5 @@
+if ~ definite _VTEXT_INC_
+_VTEXT_INC_ equ 1
 ;;
 ;; NOTE: Use @@ and @b to make a temporary vtext
 ;;
@@ -339,3 +341,4 @@ macro ASSEMBLE dest*, vsrc*, size*, offset*
 ;;  VTEXT a, SGR_RESET, "FUCK YOU DEAR", SGR_RESET
 ;;  VTEXT_BAKE 0, a, a.len
 
+end if ;; _VTEXT_INC_
