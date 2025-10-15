@@ -249,9 +249,47 @@ macro VTEXT_DISPLAY vsrc*, offset:0, until:?
   display 10
  }
 
+
+macro VTEXT_HEX vsrc*, offset:0, until:?
+ {
+  local _PRINT, _until
+  macro _PRINT dest, src, _size, _offset
+  \{
+    local chunk
+     load chunk byte from src:_offset
+     if chunk < 16
+         FMT '0'
+     end if
+     FMT %X chunk
+  \}
+
+  if until eq ?
+    _until = vsrc#.len
+  else
+    _until = until
+  end if
+
+  VTEXT_BAKE _, vsrc, _PRINT, _until, offset, 1
+  display 10
+ }
+
+
 macro VTEXT_LOAD_CHAR vsrc*, index*, output*
  {
     load output byte from vsrc:index
+ }
+
+macro VTEXT_READ_FIELD vsrc*, offset*, size*, output*
+ {
+  if size = 1
+   load output byte from vsrc:offset
+  else if size = 2
+   load output word from vsrc:offset
+  else if size = 4
+   load output dword from vsrc:offset
+  else if size = 8
+   load output qword from vsrc:offset
+  end if
  }
 
 macro VTEXT_FILL vsrc*, char*, _beg:0, _end:-1
@@ -275,6 +313,25 @@ macro VTEXT_XOR vsrc*, key*
     store byte b xor key at vsrc:%-1
   end repeat
  }
+
+macro ASSEMBLE dest*, vsrc*, size*, offset*
+ {
+  local chunk
+  if size = 8
+    load chunk qword from vsrc:offset
+    dq chunk
+  else if size = 4
+    load chunk dword from vsrc:offset
+    dd chunk
+  else if size = 2
+    load chunk word from vsrc:offset
+    dw chunk
+  else if size = 1
+    load chunk byte from vsrc:offset
+    db chunk
+  end if
+ }
+
 ;;
 ;;  VTEXT a, SGR_RED, "HELLO", SGR_RESET
 ;;  VTEXT_BAKE 0, a, a.len
