@@ -1,3 +1,5 @@
+if ~ definite _INL_ITOA_INC_
+_INC_ITOA_INC_ equ 1
 include 'regs.inc'
 
 ;; Registers in use:
@@ -188,3 +190,5 @@ macro _PAD_WITH_ZEROES bits*, base*
 .no_zeroes:
     mov rcx, tdigits
  }
+
+end if ;; _INC_ITOA_INC_
