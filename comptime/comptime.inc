@@ -1,6 +1,6 @@
 include 'fmt.inc'
 
-;; Assamble line and print
+;; Assemble line and print
 macro TRACE line*
  {
   FMT 'TRACE ' __FILE__ '[' %D __LINE__ ']: '
@@ -8,7 +8,7 @@ macro TRACE line*
   line
  }
 
-;; Assamble line
+;; Assemble line
 macro NO_TRACE line* { line }
 
 ;;
