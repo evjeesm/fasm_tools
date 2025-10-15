@@ -1,4 +1,8 @@
+if ~ definite _COMPTIME_INC_
+_COMPTIME_INC_ equ 1
+
 include 'fmt.inc'
+FMT "including " __FILE__ %NL
 
 ;; Assemble line and print
 macro TRACE line*
@@ -222,3 +226,4 @@ macro RODATA_SEGMENT
   end if
  }
 
+ end if ;; _COMPTIME_INC_
