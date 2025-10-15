@@ -1,3 +1,6 @@
+if ~ definite _CALL_INC_
+_CALL_INC_ equ 1
+
 macro SYSCALL nr, [args]
  {
 common
@@ -106,3 +109,5 @@ reverse
 common
     call func
  }
+
+end if ;; _CALL_INC_
