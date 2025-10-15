@@ -1,6 +1,6 @@
 if ~ definite _INL_ITOA_INC_
 _INC_ITOA_INC_ equ 1
-include 'regs.inc'
+include 'regs_amd64.inc'
 
 ;; Registers in use:
 ;;   rdi - dest
