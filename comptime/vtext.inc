@@ -251,6 +251,19 @@ macro VTEXT_DISPLAY vsrc*, offset:0, until:?
   display 10
  }
 
+macro VTEXT_DISPLAY_NULLTERM vsrc*, offset:0
+ {
+    local char,_offset
+    _offset = offset
+    while 1
+      VTEXT_LOAD_CHAR vsrc, _offset, char
+      if char = 0
+          break
+      end if
+      display char and 0xFF
+      _offset = _offset + 1
+    end while
+ }
 
 macro VTEXT_HEX vsrc*, offset:0, until:?
  {

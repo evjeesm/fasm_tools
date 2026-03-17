@@ -14,6 +14,13 @@ _ELF64 equ 1
 
 ;; The ELF file header.  This appears at the start of every ELF file.
 
+SHN_LORESERVE equ 0xff00
+SHN_XINDEX equ 0xffff
+SHN_UNDEF equ 0
+SHT_SYMTAB equ 2
+SHT_STRTAB equ 3
+
+
 ELFMAG equ 0x464c_457f
 
 EI_NIDENT equ 16
