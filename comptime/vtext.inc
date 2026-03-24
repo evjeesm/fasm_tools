@@ -22,6 +22,7 @@ macro VTEXT name*, [arg]
   end virtual
  }
 
+;; Read entire file into a virtual address space
 macro VTEXT_FILE name*, filepath*
  {
   virtual at 0
@@ -54,7 +55,6 @@ macro VTEXT_APPEND_AS_IS name*, [arg*]
   \}
  }
 
-
 ;; Enlarge vtext with additional 'size'
 macro VTEXT_EXPAND name*, size*
  {
@@ -62,6 +62,14 @@ macro VTEXT_EXPAND name*, size*
     rb size
     name#.len = $
   end virtual
+ }
+
+;; Reserve certain amount of bytes
+macro VTEXT_RESERVE name*, size*
+ {
+  if name#.len < size
+    VTEXT_EXPAND name, size - name#.len
+  end if
  }
 
 ;; Generic bake that takes user baking strategy.
@@ -265,16 +273,16 @@ macro VTEXT_DISPLAY vsrc*, offset:0, until:?
 
 macro VTEXT_DISPLAY_NULLTERM vsrc*, offset:0
  {
-    local char,_offset
-    _offset = offset
-    while 1
-      VTEXT_LOAD_CHAR vsrc, _offset, char
-      if char = 0
-          break
-      end if
-      display char and 0xFF
-      _offset = _offset + 1
-    end while
+  local char,_offset
+  _offset = offset
+  while 1
+    VTEXT_LOAD_CHAR vsrc, _offset, char
+    if char = 0
+        break
+    end if
+    display char and 0xFF
+    _offset = _offset + 1
+  end while
  }
 
 macro VTEXT_HEX vsrc*, offset:0, until:?
@@ -312,13 +320,13 @@ macro VTEXT_STORE_CHAR vdest*, offset*, char*
 macro VTEXT_READ_FIELD vsrc*, offset*, size*, output*
  {
   if size = 1
-   load output byte from vsrc:offset
+    load output byte from vsrc:offset
   else if size = 2
-   load output word from vsrc:offset
+    load output word from vsrc:offset
   else if size = 4
-   load output dword from vsrc:offset
+    load output dword from vsrc:offset
   else if size = 8
-   load output qword from vsrc:offset
+    load output qword from vsrc:offset
   end if
  }
 
