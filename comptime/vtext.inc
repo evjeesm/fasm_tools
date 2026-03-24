@@ -220,6 +220,19 @@ macro VTEXT_WRITE vdest*, offset*, vsrc*
   end repeat
  }
 
+macro VTEXT_READ vdest*, vsrc*, vsrc_offset*, size*
+ {
+  STATIC_ASSERT vsrc_offset + size <= vsrc#.len, "Out of vsrc bounds"
+  if vdest#.len < vsrc#.len - vsrc_offset
+    VTEXT_EXPAND vdest, vsrc#.len - vsrc_offset - vdest#.len
+  end if
+  repeat size
+    load b byte from vsrc:vsrc_offset+%-1
+    store byte b at vdest:%-1
+  end repeat
+  vdest#.len = size
+ }
+
 macro VTEXT_DISPLAY vsrc*, offset:0, until:?
  {
   local _PRINT, _until
