@@ -235,7 +235,7 @@ macro VTEXT_DISPLAY vsrc*, offset:0, until:?
     else if _size = 1
       load chunk byte from src:_offset
     end if
-     STATIC_ASSERT _size <> 0, "Chunk size should never be zero!"
+    STATIC_ASSERT _size <> 0, "Chunk size should never be zero!"
     repeat _size
       display (chunk shr (8*(%-1))) and 0xFF
     end repeat
@@ -248,7 +248,6 @@ macro VTEXT_DISPLAY vsrc*, offset:0, until:?
   end if
 
   VTEXT_BAKE _, vsrc, _PRINT, _until, offset
-  display 10
  }
 
 macro VTEXT_DISPLAY_NULLTERM vsrc*, offset:0
@@ -285,7 +284,6 @@ macro VTEXT_HEX vsrc*, offset:0, until:?
   end if
 
   VTEXT_BAKE _, vsrc, _PRINT, _until, offset, 1
-  display 10
  }
 
 macro VTEXT_LOAD_CHAR vsrc*, offset*, output*
@@ -312,7 +310,7 @@ macro VTEXT_READ_FIELD vsrc*, offset*, size*, output*
  }
 
 macro VTEXT_FILL vsrc*, char*, _beg:0, _end:-1
-{
+ {
   local stop
   if _end eq -1
     stop = vsrc#.len
@@ -350,12 +348,5 @@ macro ASSEMBLE dest*, vsrc*, size*, offset*
     db chunk
   end if
  }
-
-;;
-;;  VTEXT a, SGR_RED, "HELLO", SGR_RESET
-;;  VTEXT_BAKE 0, a, a.len
-;;
-;;  VTEXT a, SGR_RESET, "FUCK YOU DEAR", SGR_RESET
-;;  VTEXT_BAKE 0, a, a.len
 
 end if ;; _VTEXT_INC_
