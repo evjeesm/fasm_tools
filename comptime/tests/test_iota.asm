@@ -1,4 +1,5 @@
 include 'comptime.inc'
+include 'fmt.inc'
 include 'iota.inc'
 
 ;; override functions

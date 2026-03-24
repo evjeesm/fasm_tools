@@ -95,18 +95,6 @@ macro FMT [fmt*]
   restore %R, %S, %D, %U, %X, %0X, %F, %P, %R
  }
 
-;; Format code expression as is
-macro FMT_EXPR [exp*]
- {
- forward
-  irps e, exp
-  \{
-   display \`e, ' '
-  \}
-  display 10
- }
-
-
 macro DISP_STR var*
  {
   display '"'
