@@ -289,9 +289,9 @@ macro VTEXT_HEX vsrc*, offset:0, until:?
  }
 
 
-macro VTEXT_LOAD_CHAR vsrc*, index*, output*
+macro VTEXT_STORE_CHAR vdest*, offset*, char*
  {
-    load output byte from vsrc:index
+    store byte char at vdest:offset
  }
 
 macro VTEXT_READ_FIELD vsrc*, offset*, size*, output*
