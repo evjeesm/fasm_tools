@@ -288,10 +288,14 @@ macro VTEXT_HEX vsrc*, offset:0, until:?
   display 10
  }
 
+macro VTEXT_LOAD_CHAR vsrc*, offset*, output*
+ {
+  load output byte from vsrc:offset
+ }
 
 macro VTEXT_STORE_CHAR vdest*, offset*, char*
  {
-    store byte char at vdest:offset
+  store byte char at vdest:offset
  }
 
 macro VTEXT_READ_FIELD vsrc*, offset*, size*, output*
