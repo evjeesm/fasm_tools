@@ -2,6 +2,7 @@ include 'comptime.inc'
 include 'elf64.inc'
 include 'vtext.inc'
 include 'args.inc'
+include 'fmt.inc'
 
 FORMAT_ELF64_EXECUTABLE
 

@@ -1,24 +1,29 @@
 include 'comptime.inc'
 include 'vtext.inc'
 
-;; Create vtext with a name prefixed by '..'
-;; this is important when VTEXT in the assembly
-;; to not interfere with labeling!
-VTEXT ..ara, "Hello!"
-
-;; Append arguments to an existing vtext
-VTEXT_APPEND ..ara, ", World"
+;; Create vtext.
+;; prefix name with '..' in order to prevent
+;; VTEXT labels from interfering with the actual assembly
+VTEXT ..my_text, "Hello!", 0xA
 
 ;; Display vtext at compile time in fasm feed
-VTEXT_DISPLAY ..ara ;, 0, ..ara.len
+VTEXT_DISPLAY ..my_text ;, 0, ..my_text.len
 
-;; VTEXT ..ara, "Oooops" ;; Can't declare same vtext twice, but...
+;; VTEXT ..my_text, "Oooops" ;; Can't define same vtext twice
 
-;; You can overwrite contents of the existing vtext
-;; its can be done with a help of temporary vtext (@@/@b)
-VTEXT @@, "Temporary text"
-VTEXT_COPY ..ara, @b
-VTEXT_DISPLAY ..ara
+;; You can use set command to override vtext with new content
+VTEXT_SET ..my_text, 'new value', 0xA
+VTEXT_DISPLAY ..my_text
+
+;; Fill region of text with single char or alternating pattern
+VTEXT_FILL ..my_text, 4, 5, 'x','_'
+VTEXT_DISPLAY ..my_text
+
+;; Assemble structured data into the buffer
+VTEXT_RESET ..my_text ;; clear contents of the vtext
+VTEXT_ASSEMBLE ..my_text, dq 0xbadcafe, dw 0xbaba, db 0x1
+VTEXT_HEX ..my_text
+display 0xA
 
 ;; Read whole file
 VTEXT_FILE this, __FILE__

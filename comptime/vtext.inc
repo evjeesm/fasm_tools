@@ -1,24 +1,32 @@
 if ~ definite _VTEXT_INC_
 _VTEXT_INC_ equ 1
-;;
-;; NOTE: Use @@ and @b to make a temporary vtext
-;;
 
+VTEXT_DEFAULT_SIZE = 1024*1024 ;; 1MB
+
+macro VTEXT_PREALLOC name*, cap:VTEXT_DEFAULT_SIZE
+ {
+  virtual at 0
+    name::
+      rb cap
+  end virtual
+    name#.capacity = cap
+    name#.len = 0
+ }
+
+macro VTEXT_RESET name*
+ {
+   name#.len = 0
+ }
 
 ;; Creates a text in a virtual address space
-macro VTEXT name*, [arg]
+macro VTEXT name*, [arg*]
  {
  common
   virtual at 0
     name::
-    if ~ arg eq
-        db arg
-    end if
-    if `name eq '@@' ;; TMP VTEXT
-      @b#.len = $
-    else
-      name#.len = $
-    end if
+      db arg
+    name#.len = $
+    name#.capacity = $
   end virtual
  }
 
@@ -27,25 +35,67 @@ macro VTEXT_FILE name*, filepath*
  {
   virtual at 0
     name:: file filepath
-    if `name eq '@@' ;; TMP VTEXT
-      @b#.len = $
-    else
-      name#.len = $
-    end if
+    name#.len = $
+    name#.capacity = $
   end virtual
  }
 
 ;; Append to a previously defined VTEXT
-macro VTEXT_APPEND name*, [arg*]
+;; IMPORTANT: expensive operation, which deplete memory fast.
+;;            if you append single byte sequencially
+;;            54 Kb is max you can reach before memory runs out
+;;            with max memory setting (-m 2000000) 2G
+macro VTEXT_APPEND_ name*, [arg*]
  {
  common
+  STATIC_ASSERT 0, "deprecated!"
   virtual name
     db arg
     name#.len = $
   end virtual
  }
 
-;; Append to a previously defined VTEXT
+macro VTEXT_ASSEMBLE name*, [line*]
+ {
+ common
+  virtual at 0
+  local b,offset,size
+ forward
+    line
+ common
+    offset = 0
+    size = $-$$
+    VTEXT_RESERVE name, name#.len + size
+    ;; STATIC_ASSERT name#.len + size <= name#.capacity, "VTEXT overflow!"
+    while offset < size
+      load b byte from offset
+      store byte b at name:name#.len+offset
+      offset = offset + 1
+    end while
+    name#.len = name#.len + size
+  end virtual
+ }
+
+macro VTEXT_APPEND name*, [arg*]
+ {
+ common
+  virtual at 0
+  local b,offset
+ forward
+    db arg
+ common
+    STATIC_ASSERT name#.len + $-$$ <= name#.capacity, \
+        "VTEXT: name# overflow!"
+    offset = 0
+    while offset < $-$$
+      load b byte from offset
+      store byte b at name:name#.len+offset
+      offset = offset + 1
+    end while
+    name#.len = name#.len + $-$$
+  end virtual
+ }
+
 macro VTEXT_APPEND_AS_IS name*, [arg*]
  {
  forward
@@ -55,20 +105,20 @@ macro VTEXT_APPEND_AS_IS name*, [arg*]
   \}
  }
 
-;; Enlarge vtext with additional 'size'
-macro VTEXT_EXPAND name*, size*
+;; Enlarge vtext with additional 'capacity'
+macro VTEXT_EXPAND name*, capacity*
  {
   virtual name
-    rb size
-    name#.len = $
+    rb capacity
+    name#.capacity = $
   end virtual
  }
 
 ;; Reserve certain amount of bytes
-macro VTEXT_RESERVE name*, size*
+macro VTEXT_RESERVE name*, capacity*
  {
-  if name#.len < size
-    VTEXT_EXPAND name, size - name#.len
+  if name#.capacity < capacity
+    VTEXT_EXPAND name, capacity - name#.capacity
   end if
  }
 
@@ -101,13 +151,12 @@ macro VTEXT_BAKE dest*, vsrc*, BAKE_CHUNK*, until:?, init_offset:0, init_chunk_s
 ;; Generate immediate movs of the virutal text to a destination
 macro VTEXT_BAKE_MOVS dest*, vsrc*
  {
-  local n, d, text_len
+  local n, d, text_len, _STORE
   n = 0
   d = 4
   text_len = vsrc#.len
   while n < text_len
     repeat (text_len-n)/d
-      local _STORE
       macro _STORE dest, src, size, offset
       \{
        local chunk
@@ -125,18 +174,18 @@ macro VTEXT_BAKE_MOVS dest*, vsrc*
     end repeat
     d = d / 2
   end while
+  purge _STORE
  }
 
 ;; Generate immediate stack pushes of the virtual text
 macro VTEXT_BAKE_STACK vsrc*
  {
-  local n, d, text_len
+  local n, d, text_len, _STORE
   text_len = vsrc#.len
   n = len
   d = 4
   while n > 0
     repeat n / d
-      local _STORE
       macro _STORE src, size, offset
       \{
         local chunk
@@ -163,81 +212,127 @@ macro VTEXT_BAKE_STACK vsrc*
     end repeat
     d = d / 2
   end while
+  purge _STORE
  }
 
-macro VTEXT_SLICE vsrc*, _beg:0, _end:-1
+macro VTEXT_SLICE vsrc*, start_offset:*, end_offset*
  {
-  local stop, b
-  if _end eq -1
-    stop = vsrc#.len
-  else
-    stop = _end - _beg
-  end if
-  repeat stop
-    load b byte from vsrc:_beg+%-1
-    store byte b at vsrc:%-1
-  end repeat
-  store byte 0 at vsrc:stop
-  vsrc#.len = stop
+  local i, b
+  i = 0
+  STATIC_ASSERT start_offset < end_offset, "slice bounds should come in asc order!"
+  STATIC_ASSERT end_offset <= vsrc#.len, "vsrc overflow!"
+  while start_offset + i < end_offset
+    load b byte from vsrc:start_offset+i
+    store byte b at vsrc:i
+    i = i + 1
+  end while
  }
 
 macro VTEXT_SET vdest*, [arg*]
  {
  common
-  local tmp, tmp_size
   virtual at 0
-    tmp:: db arg
+  local tmp_size, i, b
+    db arg
     tmp_size = $
+    VTEXT_RESERVE vdest, tmp_size
+    i = 0
+    while i < tmp_size
+      load b byte from i
+      store byte b at vdest:i
+      i = i + 1
+    end while
   end virtual
-  if vdest#.len < tmp_size
-    VTEXT_EXPAND vdest, tmp_size - vdest#.len
-  end if
-  repeat tmp_size
-    load b byte from tmp:%-1
-    store byte b at vdest:%-1
-  end repeat
-  if vdest#.len > tmp_size
-    store byte 0 at vdest:tmp_size
-  end if
   vdest#.len = tmp_size
+ }
+
+macro VTEXT_CMP vtext*, vref*, vref_offset*, size*, output*
+ {
+  local i, c1, c2, equal
+  equal = 1
+  if vtext#.len <> size
+    output = 0
+  else
+    i = 0
+    while i < size
+      VTEXT_LOAD_CHAR vtext, i, c1
+      VTEXT_LOAD_CHAR vref, i + vref_offset, c2
+      if c1 <> c2
+        equal = 0
+        break
+      end if
+      i = i + 1
+    end while
+    output = equal
+  end if
+ }
+
+macro VTEXT_RANGE_CHAR_EQ vtext*, vtext_offset*, size*, char*, output*
+ {
+  STATIC_ASSERT vtext_offset + size <= vtext#.len, "vtext overflow"
+  local i, c, equal
+  equal = 1
+  i = 0
+  while i < size
+    VTEXT_LOAD_CHAR vtext, vtext_offset + i, c
+    if c <> char
+      equal = 0
+      break
+    end if
+    i = i + 1
+  end while
+  output = equal
  }
 
 macro VTEXT_COPY vdest*, vsrc*
  {
-  if vdest#.len < vsrc#.len
-    VTEXT_EXPAND vdest, vsrc#.len - vdest#.len
-  end if
-  repeat vsrc#.len
-    load b byte from vsrc:%-1
-    store byte b at vdest:%-1
-  end repeat
-  if vdest#.len > vsrc#.len
-    store byte 0 at vdest:vsrc#.len
-  end if
+  local i,b
+  VTEXT_RESERVE vdest, vsrc#.len
+  i = 0
+  while i < vsrc#.len
+    load b byte from vsrc:i
+    store byte b at vdest:i
+    i = i + 1
+  end while
   vdest#.len = vsrc#.len
  }
 
-macro VTEXT_WRITE vdest*, offset*, vsrc*
+macro VTEXT_COPY_RANGE vdest*, vdest_offset*, vsrc*, vsrc_offset*, size*
  {
-  if vdest#.len < offset + vsrc#.len
-    VTEXT_EXPAND vdest, offset + vsrc#.len - vdest#.len
-  end if
-  repeat vsrc#.len
-    load b byte from vsrc:%-1
-    store byte b at vdest:offset+%-1
-  end repeat
+  local i,b
+  STATIC_ASSERT vsrc_offset + size <= vsrc#.len, "Out of vsrc bounds"
+  VTEXT_RESERVE vdest, vdest_offset + size
+  i = 0
+  while i < size
+    load b byte from vsrc:vsrc_offset+i
+    store byte b at vdest:vdest_offset+i
+    i = i + 1
+  end while
+ }
+
+macro VTEXT_WRITE vdest*, vdest_offset*, vsrc*
+ {
+  local i,b
+  VTEXT_RESERVE vdest, vdest_offset + vsrc#.len
+  i = 0
+  while i < vsrc#.len
+    load b byte from vsrc:i
+    store byte b at vdest:vdest_offset+i
+    i = i + 1
+  end while
  }
 
 macro VTEXT_READ vdest*, vsrc*, vsrc_offset*, size*
  {
+  local i,b
   STATIC_ASSERT vsrc_offset + size <= vsrc#.len, "Out of vsrc bounds"
-  if vdest#.len < vsrc#.len - vsrc_offset
-    VTEXT_EXPAND vdest, vsrc#.len - vsrc_offset - vdest#.len
-  end if
-  repeat size
-    load b byte from vsrc:vsrc_offset+%-1
-    store byte b at vdest:%-1
-  end repeat
+  VTEXT_RESERVE vdest, size
+  i = 0
+  while i < size
+    load b byte from vsrc:vsrc_offset+i
+    store byte b at vdest:i
+    i = i + 1
+  end while
   vdest#.len = size
  }
 
@@ -246,7 +341,7 @@ macro VTEXT_DISPLAY vsrc*, offset:0, until:?
   local _PRINT, _until
   macro _PRINT dest, src, _size, _offset
   \{
-    local chunk
+    local chunk,i
     if _size = 8
       load chunk qword from src:_offset
     else if _size = 4
@@ -257,9 +352,11 @@ macro VTEXT_DISPLAY vsrc*, offset:0, until:?
       load chunk byte from src:_offset
     end if
     STATIC_ASSERT _size <> 0, "Chunk size should never be zero!"
-    repeat _size
-      display (chunk shr (8*(%-1))) and 0xFF
-    end repeat
+    i = 0
+    while i < _size
+      display (chunk shr (8*i)) and 0xFF
+      i = i + 1
+    end while
   \}
 
   if until eq ?
@@ -269,6 +366,7 @@ macro VTEXT_DISPLAY vsrc*, offset:0, until:?
   end if
 
   VTEXT_BAKE _, vsrc, _PRINT, _until, offset
+  purge _PRINT
  }
 
 macro VTEXT_DISPLAY_NULLTERM vsrc*, offset:0
@@ -278,7 +376,7 @@ macro VTEXT_DISPLAY_NULLTERM vsrc*, offset:0
   while 1
     VTEXT_LOAD_CHAR vsrc, _offset, char
     if char = 0
-        break
+      break
     end if
     display char and 0xFF
     _offset = _offset + 1
@@ -287,15 +385,36 @@ macro VTEXT_DISPLAY_NULLTERM vsrc*, offset:0
 
 macro VTEXT_HEX vsrc*, offset:0, until:?
  {
-  local _PRINT, _until
+  local _PRINT, _HEX, _until
   macro _PRINT dest, src, _size, _offset
   \{
     local chunk
-     load chunk byte from src:_offset
-     if chunk < 16
-         FMT '0'
+    load chunk byte from src:_offset
+    if chunk < 16
+      display '0'
+    end if
+    _HEX chunk
+  \}
+  macro _HEX num*
+  \{
+   local n,nib,i,shft,d
+   n = (num) and 0xffff_ffff_ffff_ffff
+   if n <> 0
+     bit = bsr n
+   else
+     bit = 0
+   end if
+   nib = bit/4
+   i = nib + 1
+   while i <> 0
+     shft = (i-1)*4
+     d = '0' + (n and (0xF shl shft)) shr shft
+     i = i-1
+     if d > '9'
+       d = d+'A'-'9'-1
      end if
-     FMT %X chunk
+     display d
+   end while
   \}
 
   if until eq ?
@@ -305,6 +424,8 @@ macro VTEXT_HEX vsrc*, offset:0, until:?
   end if
 
   VTEXT_BAKE _, vsrc, _PRINT, _until, offset, 1
+  purge _PRINT
+  purge _HEX
  }
 
 macro VTEXT_LOAD_CHAR vsrc*, offset*, output*
@@ -330,17 +451,24 @@ macro VTEXT_READ_FIELD vsrc*, offset*, size*, output*
   end if
  }
 
-macro VTEXT_FILL vsrc*, char*, _beg:0, _end:-1
+macro VTEXT_FILL vdest*, vdest_offset*, size*, [char*]
  {
-  local stop
-  if _end eq -1
-    stop = vsrc#.len
-  else
-    stop = _end - _beg
+ common
+  local i
+  VTEXT_RESERVE vdest, vdest_offset+size
+  i = 0
+  while 1
+ forward
+    if i >= size
+      break
+    end if
+    store char at vdest:vdest_offset+i
+    i = i + 1
+ common
+  end while
+  if vdest_offset+size > vdest#.len
+    vdest#.len = vdest_offset+size
   end if
-  repeat stop
-    store char at vsrc:_beg+%-1
-  end repeat
  }
 
 macro VTEXT_XOR vsrc*, key*

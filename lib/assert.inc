@@ -3,8 +3,11 @@ include 'call.inc'
 include 'inl_itoa.inc'
 include 'inl_io.inc'
 include 'vtext.inc'
+include 'fmt.inc'
 
 IMPL_IF_MAIN_FILE ELF64_OBJECT
+
+VTEXT_PREALLOC ..assert_buffer, 1024
 
 API assert_print_message
 API assert_str_begin
@@ -71,12 +74,14 @@ macro ASSERT_BAKE_CHUNK dest*, src*, size*, offset*
 ;;
 macro ASSERT_LOCATION file*, line*
  {
- local ..location, _RENDER
-  VTEXT ..location, file, "["
-  macro _RENDER char* \{ VTEXT_APPEND ..location, char \}
+  local _RENDER
+  VTEXT_RESET ..assert_buffer
+  VTEXT_APPEND ..assert_buffer, file, "["
+  macro _RENDER char* \{ VTEXT_APPEND ..assert_buffer, char \}
   FORMAT_DEC line, _RENDER, UNSIGNED
-  VTEXT_APPEND ..location, "] "
-  VTEXT_BAKE _, ..location, ASSERT_BAKE_CHUNK
+  purge _RENDER
+  VTEXT_APPEND ..assert_buffer, "] "
+  VTEXT_BAKE _, ..assert_buffer, ASSERT_BAKE_CHUNK
  }
 
 ;;
@@ -85,9 +90,9 @@ macro ASSERT_LOCATION file*, line*
 macro ASSERT_STR_ARG [arg*]
  {
  common
-  VTEXT @@
-  VTEXT_APPEND_AS_IS @b, arg
-  VTEXT_BAKE _, @b, ASSERT_BAKE_CHUNK
+  VTEXT_RESET ..assert_buffer
+  VTEXT_APPEND_AS_IS ..assert_buffer, arg
+  VTEXT_BAKE _, ..assert_buffer, ASSERT_BAKE_CHUNK
  }
 
 ;;
@@ -96,8 +101,9 @@ macro ASSERT_STR_ARG [arg*]
 macro ASSERT_STR_LITERAL [arg*]
  {
  common
-  VTEXT @@, arg
-  VTEXT_BAKE _, @b, ASSERT_BAKE_CHUNK
+  VTEXT_RESET ..assert_buffer
+  VTEXT_APPEND ..assert_buffer, arg
+  VTEXT_BAKE _, ..assert_buffer, ASSERT_BAKE_CHUNK
  }
 
 macro _ASSERT_CMP op*, value*, expected*, msg*
@@ -145,7 +151,7 @@ macro _ASSERT_CMP op*, value*, expected*, msg*
     CCALL assert_print_message
     ASSERT_LOCATION __FILE__, __LINE__
 
-    ASSERT_STR_ARG value, ' hello'
+    ASSERT_STR_ARG value
 
     CCALL assert_str_op, op
     ASSERT_STR_ARG expected
@@ -161,7 +167,7 @@ macro _ASSERT_CMP op*, value*, expected*, msg*
 
     CCALL assert_str_flush
 
-    leave
+    add rsp, 8*3
     SYSCALL EXIT, -1
 .ok:
     pop r10
@@ -176,7 +182,6 @@ macro _ASSERT_TEST op*, value*, msg*
  local .ok
     pushfq
     push rax
-
     mov rax, value
 
     test rax, rax
@@ -200,6 +205,7 @@ macro _ASSERT_TEST op*, value*, msg*
       STATIC_ASSERT 0, `op#" is not implemented yet!"
     end repeat
 
+    push rax
     CCALL assert_print_message
 
     ASSERT_STR_ARG value
@@ -207,14 +213,14 @@ macro _ASSERT_TEST op*, value*, msg*
     CCALL assert_str_op, op
 
     ASSERT_STR_LITERAL ", ("
-    CCALL assert_str_format_signed, rax
+    CCALL assert_str_format_signed, *[rsp]
     CCALL assert_str_op, op
     ASSERT_STR_LITERAL ") ", ASSERT_COLOR_FG_RED, \
         msg, ASSERT_COLOR_NONE, ASSERT_NL
 
     CCALL assert_str_flush
 
-    leave
+    add rsp, 8*3
     SYSCALL EXIT, -1
 .ok:
     pop rax
@@ -279,7 +285,7 @@ macro _ASSERT_TEST op*, value*, msg*
     CCALL assert_str_flush
 
     pop rcx
-    leave
+    add rsp, 8*4
     SYSCALL EXIT, -1
 .ok:
     pop rcx

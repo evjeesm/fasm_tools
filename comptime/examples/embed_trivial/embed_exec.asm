@@ -2,6 +2,7 @@ format ELF64 executable 3
 include 'comptime.inc'
 include 'elf64.inc'
 include 'vtext.inc'
+include 'fmt.inc'
 
 VTEXT_FILE ..payload, './payload'
 ;; Assembling only elf header
