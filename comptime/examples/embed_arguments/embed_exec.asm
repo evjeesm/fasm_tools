@@ -45,6 +45,9 @@ MAIN ..start:
     PUSH_PTRS ..arg0, ..arg1, ..arg2
     push 3 ;; args count
 
+    PRINT_INL "Embed runs!", 0xA
+    PRINT_VALUE ..payload_entry
+
     ;; int3
 if ~ PAYLOAD_CALL eq & PAYLOAD_CALL = 1
     call ..payload_entry ;; treat payload as a function
