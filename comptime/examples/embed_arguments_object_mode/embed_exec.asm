@@ -54,12 +54,13 @@ end virtual
 ;; creating an entry label
 CODE_SEGMENT
 MAIN ..start:
-
     ;; Prepare for call
     PUSH_PTRS ..env0, ..env1
     PUSH_PTRS ..arg0, ..arg1, ..arg2
     push 3 ;; args count
 
+    PRINT_INL "Embed runs!", 0xA
+    PRINT_VALUE ..payload_entry
     ;; int3
 if ~ PAYLOAD_CALL eq & PAYLOAD_CALL = 1
     call ..payload_entry ;; treat payload as a function
@@ -68,7 +69,6 @@ if ~ PAYLOAD_CALL eq & PAYLOAD_CALL = 1
 else
     jmp ..payload_entry ;; unconditionally pass controll to the payload
 end if
-
 
 DATA_SEGMENT
 ..arg0:
@@ -92,10 +92,15 @@ db pad dup 0
 
 origin = $ ;; this is new zero, here ..payload will reside
 FMT "ORIGIN: " %U origin %NL
+
+;; relative file offset
 reloff = origin - 400000h
 FMT "RELOFF: " %U reloff %NL
 
-label ..payload_entry at reloff + e_entry
+;; label ..payload_entry at reloff + e_entry - 0x1000;; + 0xe8
+
+FMT "PAYLOAD ENTRY: " %0X ..payload_entry %NL
+
 offset = 0
 
 if e_shoff = 0
@@ -170,6 +175,9 @@ else
         load sh_type dword from sec#.sh_type
         FMT "@" %U sec#.sh_type " sh_type = " %D sh_type %NL
 
+        load sh_addr qword from sec#.sh_addr
+        FMT "@" %U sec#.sh_addr " sh_addr = " %D sh_addr %NL
+
         if sh_type = SHT_SYMTAB
             FMT "TODO: List symbols..." %NL
         end if
@@ -229,24 +237,31 @@ if e_phoff <> 0 ;; Program header
 
         load p_flags dword from seg#.p_flags
       end virtual
-      ;; Here is where segment is built
-      if p_flags and PF_X & p_flags and PF_R
-        FMT "executable readable"
-        ;; align p_align
-        segment readable executable
-      else if p_flags and PF_R & p_flags and PF_W
-        FMT "readable writable"
-        ;; align p_align
-        segment readable writable
-      else if p_flags and PF_R
-        FMT "readable"
-        ;; align p_align
-        segment readable
+      if p_offset = 0 ;; Meta data program header
+        ;; patch payload entry offset, because we are not going to include first "META" segment
+        ;; containing elf header and other stuff.
+        aligned_size = (p_memsz + p_align - 1) and (not (p_align - 1))
+        e_entry = e_entry - aligned_size
       else
-        err ;; unsupported segment
+        ;; Here is where segment is built
+        if p_flags and PF_X & p_flags and PF_R
+          FMT "executable readable"
+          ;; align p_align
+          segment readable executable
+        else if p_flags and PF_R & p_flags and PF_W
+          FMT "readable writable"
+          ;; align p_align
+          segment readable writable
+        else if p_flags and PF_R
+          FMT "readable"
+          ;; align p_align
+          segment readable
+        else
+          err ;; unsupported segment
+        end if
+        FMT %NL
+        VTEXT_BAKE _, ..payload, ASSEMBLE, p_offset + p_filesz, p_offset
       end if
-      FMT %NL
-      VTEXT_BAKE _, ..payload, ASSEMBLE, p_offset + p_filesz, p_offset
       offset = offset + e_phentsize
       index = index + 1
     end if
@@ -254,3 +269,5 @@ if e_phoff <> 0 ;; Program header
   PH e_phnum, Pa, Pb, Pc, Pd, Pe, Pf
 end if ;; Program header
 
+;; Declare payload entry postfactum
+label ..payload_entry at reloff + e_entry
