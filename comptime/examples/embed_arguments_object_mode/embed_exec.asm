@@ -152,49 +152,38 @@ else
     VTEXT_DISPLAY ..payload, shstrtab_offset, shstrtab_offset+shstrtab_size
   end virtual
 
-  offset = e_shoff
   index = 0
-  macro SH count*, [sec*]
-   {
-   forward
-    if index < count
-      virtual at offset
-        virtual at $
-          sec Elf64_Shdr
-        end virtual
+  offset = e_shoff
+  while index < e_shnum
+    virtual at offset
+      VTEXT_BAKE _, ..payload, ASSEMBLE, $$+e_shentsize, $$
+      load sh_name dword from $$+_Elf64_Shdr_.sh_name
+      FMT "@" %U $$+_Elf64_Shdr_.sh_name " sh_name = " %D sh_name %NL
 
-        VTEXT_BAKE _, ..payload, ASSEMBLE, offset+sizeof.Elf64_Shdr, offset
+      FMT "Section '"
+      VTEXT_DISPLAY_NULLTERM ..payload, shstrtab_offset+sh_name
+      FMT "' #" %U index " AT " %X $$ %NL
 
-        load sh_name dword from sec#.sh_name
-        FMT "@" %U sec#.sh_name " sh_name = " %D sh_name %NL
+      load sh_type dword from $$+_Elf64_Shdr_.sh_type
+      FMT "@" %U $$+_Elf64_Shdr_.sh_type " sh_type = " %D sh_type %NL
+      ;; STATIC_ASSERT sh_type = SH_STRTAB , "Unsupported section type"
+      if sh_type = SHT_SYMTAB
+          FMT "TODO: List symbols..." %NL
+      end if
 
-        FMT "Section '"
-        VTEXT_DISPLAY_NULLTERM ..payload, shstrtab_offset+sh_name
-        FMT "' #" %U index " AT " %X sec %NL
+      load sh_addr qword from $$+_Elf64_Shdr_.sh_addr
+      FMT "@" %U $$+_Elf64_Shdr_.sh_addr " sh_addr = " %D sh_addr %NL
 
-        load sh_type dword from sec#.sh_type
-        FMT "@" %U sec#.sh_type " sh_type = " %D sh_type %NL
+      load sh_offset qword from $$+_Elf64_Shdr_.sh_offset
+      FMT "@" %U $$+_Elf64_Shdr_.sh_offset " sh_offset = " %D sh_offset %NL
 
-        load sh_addr qword from sec#.sh_addr
-        FMT "@" %U sec#.sh_addr " sh_addr = " %D sh_addr %NL
+      load sh_entsize qword from $$+_Elf64_Shdr_.sh_entsize
+      FMT "@" %U $$+_Elf64_Shdr_.sh_entsize " sh_entsize = " %D sh_entsize %NL
 
-        if sh_type = SHT_SYMTAB
-            FMT "TODO: List symbols..." %NL
-        end if
-        ;; STATIC_ASSERT sh_type = SH_STRTAB , "Unsupported section type"
-
-        load sh_offset qword from sec#.sh_offset
-        FMT "@" %U sec#.sh_offset " sh_offset = " %D sh_offset %NL
-
-        load sh_entsize qword from sec#.sh_entsize
-        FMT "@" %U sec#.sh_entsize " sh_entsize = " %D sh_entsize %NL
-
-      end virtual
-      offset = offset + e_shentsize
-      index = index + 1
-    end if
-   }
-  SH e_shnum, Sa, Sb, Sc, Sd, Se, Sf
+    end virtual
+    offset = offset + e_shentsize
+    index = index + 1
+  end while
 end if
 
 if e_phoff <> 0 ;; Program header
@@ -202,71 +191,63 @@ if e_phoff <> 0 ;; Program header
   ;; Iterating over program header entries
   index = 0
   offset = e_phoff
-  macro PH count*, [seg*]
-   {
-   forward
-    if index < count
-      virtual at offset
-        virtual at $
-          seg Elf64_Phdr
-        end virtual
-        VTEXT_BAKE _, ..payload, ASSEMBLE, offset+sizeof.Elf64_Phdr, offset
+  while index < e_phnum
+    virtual at offset
+      VTEXT_BAKE _, ..payload, ASSEMBLE, $$+sizeof.Elf64_Phdr, $$
+      FMT "Segment #" %U index " AT " %X $$ %NL
 
-        FMT "Segment #" %U index " AT " %X seg %NL
-        load p_type dword from seg#.p_type
-        FMT "@" %U seg#.p_type " p_type = " %D p_type %NL
-        STATIC_ASSERT p_type = PT_LOAD , "Unsupported segment type"
+      load p_type dword from $$+_Elf64_Phdr_.p_type
+      FMT "@" %U $$+_Elf64_Phdr_.p_type " p_type = " %D p_type %NL
+      STATIC_ASSERT p_type = PT_LOAD , "Unsupported segment type"
 
-        load p_offset qword from seg#.p_offset
-        FMT "@" %U seg#.p_offset " p_offset = " %D p_offset %NL
+      load p_offset qword from $$+_Elf64_Phdr_.p_offset
+      FMT "@" %U $$+_Elf64_Phdr_.p_offset " p_offset = " %D p_offset %NL
 
-        load p_vaddr dword from seg#.p_vaddr
-        FMT "@" %U seg#.p_vaddr " p_vaddr = " %D p_vaddr %NL
+      load p_vaddr dword from $$+_Elf64_Phdr_.p_vaddr
+      FMT "@" %U $$+_Elf64_Phdr_.p_vaddr " p_vaddr = " %D p_vaddr %NL
 
-        load p_paddr dword from seg#.p_paddr
-        FMT "@" %U seg#.p_paddr " p_paddr = " %D p_paddr %NL
+      load p_paddr dword from $$+_Elf64_Phdr_.p_paddr
+      FMT "@" %U $$+_Elf64_Phdr_.p_paddr " p_paddr = " %D p_paddr %NL
 
-        load p_filesz dword from seg#.p_filesz
-        FMT "@" %U seg#.p_filesz " p_filesz = " %D p_filesz %NL
+      load p_filesz dword from $$+_Elf64_Phdr_.p_filesz
+      FMT "@" %U $$+_Elf64_Phdr_.p_filesz " p_filesz = " %D p_filesz %NL
 
-        load p_memsz dword from seg#.p_memsz
-        FMT "@" %U seg#.p_memsz " p_memsz = " %D p_memsz %NL
+      load p_memsz dword from $$+_Elf64_Phdr_.p_memsz
+      FMT "@" %U $$+_Elf64_Phdr_.p_memsz " p_memsz = " %D p_memsz %NL
 
-        load p_align dword from seg#.p_align
-        FMT "@" %U seg#.p_align " p_align = " %D p_align %NL
+      load p_align dword from $$+_Elf64_Phdr_.p_align
+      FMT "@" %U $$+_Elf64_Phdr_.p_align " p_align = " %D p_align %NL
 
-        load p_flags dword from seg#.p_flags
-      end virtual
-      if p_offset = 0 ;; Meta data program header
-        ;; patch payload entry offset, because we are not going to include first "META" segment
-        ;; containing elf header and other stuff.
-        aligned_size = (p_memsz + p_align - 1) and (not (p_align - 1))
-        e_entry = e_entry - aligned_size
+      load p_flags dword from $$+_Elf64_Phdr_.p_flags
+    end virtual
+    if p_offset = 0 ;; Meta data program header
+      ;; patch payload entry offset, because we are not going to include first "META" segment
+      ;; containing elf header and other stuff.
+      aligned_size = (p_memsz + p_align - 1) and (not (p_align - 1))
+      e_entry = e_entry - aligned_size
+    else
+      ;; Here is where segment is built
+      if p_flags and PF_X & p_flags and PF_R
+        FMT "executable readable"
+        ;; align p_align
+        segment readable executable
+      else if p_flags and PF_R & p_flags and PF_W
+        FMT "readable writable"
+        ;; align p_align
+        segment readable writable
+      else if p_flags and PF_R
+        FMT "readable"
+        ;; align p_align
+        segment readable
       else
-        ;; Here is where segment is built
-        if p_flags and PF_X & p_flags and PF_R
-          FMT "executable readable"
-          ;; align p_align
-          segment readable executable
-        else if p_flags and PF_R & p_flags and PF_W
-          FMT "readable writable"
-          ;; align p_align
-          segment readable writable
-        else if p_flags and PF_R
-          FMT "readable"
-          ;; align p_align
-          segment readable
-        else
-          err ;; unsupported segment
-        end if
-        FMT %NL
-        VTEXT_BAKE _, ..payload, ASSEMBLE, p_offset + p_filesz, p_offset
+        err ;; unsupported segment
       end if
-      offset = offset + e_phentsize
-      index = index + 1
+      FMT %NL
+      VTEXT_BAKE _, ..payload, ASSEMBLE, p_offset + p_filesz, p_offset
     end if
-   }
-  PH e_phnum, Pa, Pb, Pc, Pd, Pe, Pf
+    offset = offset + e_phentsize
+    index = index + 1
+  end while
 end if ;; Program header
 
 ;; Declare payload entry postfactum
