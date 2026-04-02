@@ -7,7 +7,7 @@ include 'vtext.inc'
 
 macro HASH_TABLE tbl*, value_size*, capacity:10
  {
-  VTEXT_PREALLOC tbl#.tmp, value_size
+  VTEXT_PREALLOC tbl#.tbl.value_tmp, value_size
   tbl#.tbl.value_size = value_size
   tbl#.tbl.capacity = capacity
   tbl#.tbl.size = 0
@@ -17,14 +17,13 @@ macro HASH_TABLE tbl*, value_size*, capacity:10
 
 macro HASH_TABLE_PUT tbl*, value*
  {
-  local value_hash, offset, start_index, index, equal, is_zero, pad
-  _CONV_VALUE_TO_VTEXT tbl#.tmp, value, tbl#.tbl.value_size
-  HASH_TABLE_PUT_VTEXT tbl, tbl#.tmp
+  _CONV_VALUE_TO_VTEXT tbl#.tbl.value_tmp, value, tbl#.tbl.value_size
+  HASH_TABLE_PUT_VTEXT tbl, tbl#.tbl.value_tmp
  }
 
 macro HASH_TABLE_PUT_VTEXT tbl*, vtext*
  {
-  local value_hash, offset, start_index, index, equal, is_zero, pad
+  local value_hash, offset, start_index, index, equal, is_zero
   STATIC_ASSERT vtext#.len = tbl#.tbl.value_size,\
     "vtext size should match element size of the table!"
   HASH_VTEXT_SIMPLE vtext, tbl#.tbl.value_size, value_hash
@@ -51,14 +50,13 @@ macro HASH_TABLE_PUT_VTEXT tbl*, vtext*
 
 macro HASH_TABLE_HAS_VALUE tbl*, value*, output*
  {
-  local value_hash, offset, start_index, index, equal, pad
-  _CONV_VALUE_TO_VTEXT tbl#.tmp, value, tbl#.tbl.value_size
-  HASH_TABLE_HAS_VTEXT tbl, tbl#.tmp, output
+  _CONV_VALUE_TO_VTEXT tbl#.tbl.value_tmp, value, tbl#.tbl.value_size
+  HASH_TABLE_HAS_VTEXT tbl, tbl#.tbl.value_tmp, output
  }
 
 macro HASH_TABLE_HAS_VTEXT tbl*, vtext*, output*
  {
-  local value_hash, offset, start_index, index, equal, pad
+  local value_hash, offset, start_index, index, equal
   STATIC_ASSERT vtext#.len = tbl#.tbl.value_size,\
     "vtext size should match element size of the table!"
   HASH_VTEXT_SIMPLE vtext, tbl#.tbl.value_size, value_hash
@@ -82,14 +80,13 @@ macro HASH_TABLE_HAS_VTEXT tbl*, vtext*, output*
 
 macro HASH_TABLE_REMOVE tbl*, value*
  {
-  local value_hash, offset, start_index, index, equal, is_zero, pad
-  _CONV_VALUE_TO_VTEXT tbl#.tmp, value, tbl#.tbl.value_size
-  HASH_TABLE_REMOVE_VTEXT tbl, tbl#.tmp
+  _CONV_VALUE_TO_VTEXT tbl#.tbl.value_tmp, value, tbl#.tbl.value_size
+  HASH_TABLE_REMOVE_VTEXT tbl, tbl#.tbl.value_tmp
  }
 
 macro HASH_TABLE_REMOVE_VTEXT tbl*, vtext*
  {
-  local value_hash, offset, start_index, index, equal, is_zero, pad
+  local value_hash, offset, start_index, index, equal, is_zero
   STATIC_ASSERT vtext#.len = tbl#.tbl.value_size,\
     "vtext size should match element size of the table!"
   HASH_VTEXT_SIMPLE vtext, tbl#.tbl.value_size, value_hash
@@ -112,11 +109,12 @@ macro HASH_TABLE_REMOVE_VTEXT tbl*, vtext*
 
 macro HASH_TABLE_RESET tbl*
  {
-   VTEXT_FILL tbl, 0, tbl#.tbl.capacity * tbl#.tbl.value_size, 0x0
+  VTEXT_FILL tbl, 0, tbl#.tbl.capacity * tbl#.tbl.value_size, 0x0
  }
 
 macro _CONV_VALUE_TO_VTEXT vdest*, value*, value_size*
  {
+  local pad
   VTEXT_SET vdest, value
   pad = value_size - vdest#.len
   if pad >= 0
