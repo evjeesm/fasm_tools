@@ -1,3 +1,6 @@
+if ~ definite _IOTA_INC_
+_IOTA_INC_ equ 1
+
 macro IOTA_SET_STRIDE value:1
  { IOTA_stride = value }
 
@@ -9,27 +12,28 @@ macro IOTA_STRIDE_FUNC
 
 macro IOTA expr*
  {
-   if ~ definite IOTA_count
-       IOTA_count = 0
-   end if
-   if ~ definite IOTA_stride
-       IOTA_stride = 1
-   end if
-   while 1
-   match a == b, expr
-   \{
-       a = b
-       IOTA_count = a + 1
-       break
-   \}
-   match a, expr
-   \{
-       a = IOTA_count
-       break
-   \}
-   break
-   end while
-   IOTA_COUNTER_FUNC
-   IOTA_STRIDE_FUNC
+  if ~ definite IOTA_count
+    IOTA_count = 0
+  end if
+  if ~ definite IOTA_stride
+    IOTA_stride = 1
+  end if
+  while 1
+  match a == b, expr
+  \{
+    a = b
+    IOTA_count = a + 1
+    break
+  \}
+  match a, expr
+  \{
+    a = IOTA_count
+    break
+  \}
+  break
+  end while
+  IOTA_COUNTER_FUNC
+  IOTA_STRIDE_FUNC
  }
 
+end if ;; _IOTA_INC_
