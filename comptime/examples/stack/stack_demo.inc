@@ -1,6 +1,19 @@
 include '../../fmt.inc'
 include '../../stack.inc'
 
+STACK s, 8
+
+STACK_PUSH s, "hello"
+STACK_PUSH s, "world"
+STACK_PUSH s, "ok go"
+
+WHILE_NOT_EMPTY s
+  STACK_PEEK s, val
+  VTEXT_DISPLAY val
+  display 0xA
+  STACK_POP s
+END_WHILE_NOT_EMPTY
+
 VTEXT_STRUCT ..my_struct, <key, db 1>, <value, dw 2>
 FMT %D ..my_struct.len %NL
 FMT "offset: " %D ..my_struct.key.offset %NL

@@ -6,7 +6,7 @@ include 'vtext.inc'
 
 macro STACK stack*, value_size*, capacity:10
  {
-  VTEXT_PREALLOC stack#.tmp, value_size
+  VTEXT_PREALLOC stack#.stack.tmp, value_size
   stack#.stack.value_size = value_size
   stack#.stack.cap = capacity
   stack#.stack.size = 0
@@ -28,8 +28,8 @@ macro STACK_PUSH stack*, [value*]
  forward
   local offset
   offset = stack#.stack.size * stack#.stack.value_size
-  VTEXT_SET stack#.tmp, value
-  VTEXT_WRITE stack, offset, stack#.tmp
+  VTEXT_SET stack#.stack.tmp, value
+  VTEXT_WRITE stack, offset, stack#.stack.tmp
   stack#.stack.size = stack#.stack.size + 1
   STACK_GROW stack
  }
@@ -75,19 +75,6 @@ macro STACK_IS_EMPTY stack*, output*
 
 macro WHILE_NOT_EMPTY stack* { while stack#.stack.size }
 macro END_WHILE_NOT_EMPTY    { end while         }
-
-STACK s, 8
-
-STACK_PUSH s, "hello"
-STACK_PUSH s, "world"
-STACK_PUSH s, "ok go"
-
-WHILE_NOT_EMPTY s
-  STACK_PEEK s, val
-  VTEXT_DISPLAY val
-  display 0xA
-  STACK_POP s
-END_WHILE_NOT_EMPTY
 
 macro VTEXT_STRUCT_FIELD name*, field*, def*
  {
