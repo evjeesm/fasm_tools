@@ -1,7 +1,10 @@
-include 'comptime.inc'
-include '../x64/inl_io.inc'
+include 'build.inc'
 
-FORMAT_ELF64_OBJECT
+;; fasm should peek up architecture specific includes after target specified
+TARGET ELF64, OBJECT
+
+;; this platform independed file will do the switch
+include 'os/inl_io.inc'
 
 CODE_SEGMENT
 MAIN _start:

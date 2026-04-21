@@ -1,8 +1,6 @@
 if ~ definite _COMPTIME_INC_
 _COMPTIME_INC_ equ 1
 
-include 'build.inc'
-
 ;;
 ;; Classical compile time assert with message.
 ;;

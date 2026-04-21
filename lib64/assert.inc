@@ -1,4 +1,4 @@
-include 'comptime.inc'
+include 'build.inc'
 include 'vtext.inc'
 include 'fmt.inc'
 

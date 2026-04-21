@@ -1,13 +1,9 @@
+include 'comptime/build.inc'
+include 'comptime/fmt.inc'
 
-include 'comptime.inc'
-include 'call.inc'
-include 'syscall.inc'
-include 'inl_io.inc'
-include 'inl_itoa.inc'
-include 'args.inc'
-include 'fmt.inc'
-
-FORMAT_ELF64_OBJECT
+TARGET ELF64, OBJECT
+include 'os/inl_io.inc'
+include 'os/args.inc' ;; TODO:: for now using soft link to x86_64
 
 CODE_SEGMENT
 MAIN _start:

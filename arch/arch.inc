@@ -8,6 +8,7 @@ if definite ARCH
     include 'x86/call.inc'
     include 'x86/syscall.inc'
     include 'x86/syscall_nr.inc'
+    include 'x86/pointer.inc'
     DEBUG
       display "INCLUDE ARCH X86", 10
     END_DEBUG
@@ -15,6 +16,7 @@ if definite ARCH
     include 'x86_64/call.inc'
     include 'x86_64/syscall.inc'
     include 'x86_64/syscall_nr.inc'
+    include 'x86_64/pointer.inc'
     DEBUG
       display "INCLUDE ARCH X86_64", 10
     END_DEBUG

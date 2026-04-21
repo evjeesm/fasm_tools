@@ -1,6 +1,8 @@
 if ~ definite _BUILD_INC_
 _BUILD_INC_ equ 1
 
+include 'comptime.inc'
+
 ;; Parse compilation target
 if ~ defined RELEASE
   _RELEASE = 0 ;; default -> debug mode
