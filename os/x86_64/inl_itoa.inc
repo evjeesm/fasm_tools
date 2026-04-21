@@ -1,6 +1,6 @@
 if ~ definite _INL_ITOA_INC_
 _INC_ITOA_INC_ equ 1
-include '../arch/x64/registers.inc'
+include '../arch/x86_64/registers.inc'
 
 ;; Registers in use:
 ;;   rdi - dest
