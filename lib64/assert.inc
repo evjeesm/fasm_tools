@@ -2,12 +2,6 @@ include 'comptime.inc'
 include 'vtext.inc'
 include 'fmt.inc'
 
-;; include 'inl_itoa.inc'
-;; include 'inl_io.inc'
-
-FMT 'ARCH: ' %D ARCH %NL
-FMT 'BUILD_TYPE: ' %D BUILD_TYPE %NL
-
 IMPL_IF_MAIN_FILE ELF64, OBJECT
 include 'os/inl_io.inc'
 

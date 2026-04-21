@@ -1,14 +1,13 @@
 include 'comptime.inc'
-TARGET ELF64, EXECUTABLE
+TARGET ELF64, OBJECT
 
-IMPL_FOR_DEBUG 'assert.inc'
-
+;; IMPL_FOR_DEBUG 'assert.inc'
+USE_SHARED_FOR_DEBUG 'assert.inc'
 
 CODE_SEGMENT
 MAIN _start:
     mov rax, 70
     mov rdx, 70
-
     ASSERT_EQ rax, rdx, "Compare registers"
     ASSERT_EQ 70, 70, "Compare numerics"
     ASSERT_EQ rax, 70, "Register with Numeric"

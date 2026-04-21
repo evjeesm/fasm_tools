@@ -92,6 +92,12 @@ ARCH_X64 = 1
 macro TARGET fmt*, type*
  {
   __MAIN_FILE__ equ __FILE__
+  SET_FORMAT fmt, type
+  display "TARGET: ", `fmt, ' ', `type, 0xA
+ }
+
+macro SET_FORMAT fmt*, type*
+ {
   repeat 1
   match =ELF64 =EXECUTABLE, fmt type
   \{
@@ -115,8 +121,6 @@ macro TARGET fmt*, type*
   \}
   err ;; wrong format
   end repeat
-
-  display "TARGET: ", `fmt, ' ', `type, 0xA
 
   ;; Set build type
   match =EXECUTABLE, type \{ BUILD_TYPE = BUILD_TYPE_EXECUTABLE \}
@@ -174,12 +178,11 @@ macro IMPL_FOR_DEBUG file*, prefix
 ;;
 macro IMPL_IF_MAIN_FILE fmt*, type*
  {
-  if ~ definite __MAIN_FILE__
-    TARGET fmt, type
+  if ~ defined __MAIN_FILE__
+    SET_FORMAT fmt, type
   end if
   postpone \{
   if ~ defined __MAIN_FILE__
-    TARGET fmt, type
     IMPL_SELF
   end if
   \}
@@ -218,6 +221,12 @@ macro USE file*, prefix
   IMPORT_API prefix
  }
 
+macro USE_SHARED file*, prefix
+ {
+  include file
+  IMPORT_API_SHARED prefix
+ }
+
 macro IMPORT_API prefix
  {
   if BUILD_TYPE = BUILD_TYPE_OBJECT
@@ -226,6 +235,29 @@ macro IMPORT_API prefix
         extrn prefix\#symbol
       else
         extrn symbol
+      end if
+    \}
+  end if
+ }
+
+macro EXTRN_PLT sym*
+ {
+  extrn `sym as _#sym
+  sym = PLT _#sym
+ }
+
+macro IMPORT_API_SHARED prefix
+ {
+  if BUILD_TYPE = BUILD_TYPE_OBJECT
+    irpv symbol, __SYMBOLS__ \{
+      if ~ prefix eq
+        ;; extrn prefix\#symbol as _\#prefix\#symbol
+        ;; prefix\#symbol = PLT _\#prefix\#symbol
+        EXTRN_PLT prefix\#symbol
+      else
+        ;; extrn symbol as _\#symbol
+        ;; symbol = PLT _\#symbol
+        EXTRN_PLT symbol
       end if
     \}
   end if
@@ -241,6 +273,15 @@ macro USE_FOR_DEBUG file*, prefix
   END_DEBUG
  }
 
+;;
+;; Will be used only in DEBUG mode
+;;
+macro USE_SHARED_FOR_DEBUG file*, prefix
+ {
+  DEBUG
+  USE_SHARED file, prefix
+  END_DEBUG
+ }
 
 ;;
 ;; Pushes symbols into an API list
