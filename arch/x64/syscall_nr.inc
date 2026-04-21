@@ -27,7 +27,3 @@ CHMOD     = 90
 FCHMOD    = 91
 UMASK     = 95
 GETRANDOM = 318
-
-STDIN     = 0
-STDOUT    = 1
-STDERR    = 2

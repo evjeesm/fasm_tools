@@ -1,4 +1,6 @@
 include 'comptime.inc'
-FORMAT_ELF64_OBJECT
+
+TARGET ELF64, OBJECT
+
 TRACE <mov rax, 1>
 

@@ -1,11 +1,15 @@
 include 'comptime.inc'
-include 'call.inc'
-include 'inl_itoa.inc'
-include 'inl_io.inc'
 include 'vtext.inc'
 include 'fmt.inc'
 
-IMPL_IF_MAIN_FILE ELF64_OBJECT
+;; include 'inl_itoa.inc'
+;; include 'inl_io.inc'
+
+FMT 'ARCH: ' %D ARCH %NL
+FMT 'BUILD_TYPE: ' %D BUILD_TYPE %NL
+
+IMPL_IF_MAIN_FILE ELF64, OBJECT
+include 'os/inl_io.inc'
 
 VTEXT_PREALLOC ..assert_buffer, 1024
 
@@ -66,7 +70,7 @@ macro ASSERT_BAKE_CHUNK dest*, src*, size*, offset*
    else if size = 1
      load chunk byte from src:offset
    end if
-   CCALL assert_str_build_reg, chunk, size
+   CALL assert_str_build_reg, chunk, size
  }
 
 ;;
@@ -148,24 +152,24 @@ macro _ASSERT_CMP op*, value*, expected*, msg*
     push r10
     push rax
 
-    CCALL assert_print_message
+    CALL assert_print_message
     ASSERT_LOCATION __FILE__, __LINE__
 
     ASSERT_STR_ARG value
 
-    CCALL assert_str_op, op
+    CALL assert_str_op, op
     ASSERT_STR_ARG expected
 
     ASSERT_STR_LITERAL ",("
-    CCALL assert_str_format, *[rsp] ;; value
+    CALL assert_str_format, *[rsp] ;; value
 
-    CCALL assert_str_op, op
-    CCALL assert_str_format, *[rsp+8] ;; expected
+    CALL assert_str_op, op
+    CALL assert_str_format, *[rsp+8] ;; expected
     ASSERT_STR_LITERAL ") "
 
     ASSERT_STR_LITERAL ASSERT_COLOR_FG_RED, msg, ASSERT_COLOR_NONE, ASSERT_NL
 
-    CCALL assert_str_flush
+    CALL assert_str_flush
 
     add rsp, 8*3
     SYSCALL EXIT, -1
@@ -206,19 +210,19 @@ macro _ASSERT_TEST op*, value*, msg*
     end repeat
 
     push rax
-    CCALL assert_print_message
+    CALL assert_print_message
 
     ASSERT_STR_ARG value
 
-    CCALL assert_str_op, op
+    CALL assert_str_op, op
 
     ASSERT_STR_LITERAL ", ("
-    CCALL assert_str_format_signed, *[rsp]
-    CCALL assert_str_op, op
+    CALL assert_str_format_signed, *[rsp]
+    CALL assert_str_op, op
     ASSERT_STR_LITERAL ") ", ASSERT_COLOR_FG_RED, \
         msg, ASSERT_COLOR_NONE, ASSERT_NL
 
-    CCALL assert_str_flush
+    CALL assert_str_flush
 
     add rsp, 8*3
     SYSCALL EXIT, -1
@@ -269,20 +273,20 @@ macro _ASSERT_TEST op*, value*, msg*
     neg rcx
     push rcx ; store assert offset
 
-    CCALL assert_print_message
+    CALL assert_print_message
 
     ASSERT_LOCATION __FILE__, __LINE__
 
-    CCALL assert_str_ranges_op, op
+    CALL assert_str_ranges_op, op
     ASSERT_STR_ARG '(actual:', actual, ', expected:', expected ,')'
     ASSERT_STR_LITERAL ASSERT_NL
 
-    CCALL assert_str_range_actual, [actual], *[rsp], size
-    CCALL assert_str_range_expected, [expected], *[rsp], size
+    CALL assert_str_range_actual, [actual], *[rsp], size
+    CALL assert_str_range_expected, [expected], *[rsp], size
 
     ASSERT_STR_LITERAL ASSERT_COLOR_FG_RED, msg, ASSERT_COLOR_NONE, ASSERT_NL
 
-    CCALL assert_str_flush
+    CALL assert_str_flush
 
     pop rcx
     add rsp, 8*4
@@ -335,19 +339,19 @@ macro _ASSERT_RANGE_CHAR op*, actual*, char*, size*, msg*
     neg rcx
     push rcx ; store assert offset
 
-    CCALL assert_print_message
+    CALL assert_print_message
 
     ASSERT_LOCATION __FILE__, __LINE__
 
-    CCALL assert_str_ranges_op, op
+    CALL assert_str_ranges_op, op
     ASSERT_STR_ARG '(actual:', actual, ', char:', "'", char, "' "
-    CCALL assert_str_format_byte_hex, char
+    CALL assert_str_format_byte_hex, char
     ASSERT_STR_LITERAL ')', ASSERT_NL
 
-    CCALL assert_str_range_actual, [actual], *[rsp], size
+    CALL assert_str_range_actual, [actual], *[rsp], size
     ASSERT_STR_LITERAL ASSERT_COLOR_FG_RED, msg, ASSERT_COLOR_NONE, ASSERT_NL
 
-    CCALL assert_str_flush
+    CALL assert_str_flush
 
     pop rcx
     add rsp, 8*3 ;; clean stack
@@ -440,7 +444,7 @@ assert_str_begin:
 ;; Outputs an assert message to the error stream
 assert_str_flush:
     ERROR [assert_str], *[assert_str_index]
-    CCALL assert_str_begin
+    CALL assert_str_begin
     ret
 
 ;; Copy string to assert message buffer advancing the index.
@@ -452,7 +456,7 @@ assert_str_build:
     mov rdx, [assert_str_index]
     mov r8, rcx
 
-    ;; CCALL assert_strcpy, [assert_str], rsi, rdx, rcx
+    ;; CALL assert_strcpy, [assert_str], rsi, rdx, rcx
     lea rdi, [assert_str]
     call assert_strcpy
 
@@ -571,9 +575,9 @@ assert_str_range_actual:
     push rdi ;; range
     push rsi ;; assert_offset
 
-    CCALL .print, [assert_str_build_hex] ;; Hex
-    CCALL assert_str_pad, ' ', 4
-    CCALL .print, [assert_str_build] ;; Verbatim
+    CALL .print, [assert_str_build_hex] ;; Hex
+    CALL assert_str_pad, ' ', 4
+    CALL .print, [assert_str_build] ;; Verbatim
     ASSERT_STR_LITERAL ASSERT_NL
 
     add rsp, 8*3
@@ -597,7 +601,7 @@ assert_str_range_actual:
 
     ;; Print matching part
     mov rbx, [.print_func]
-    CCALL rbx, *[.range_ptr], *[.assert_offset]
+    CALL rbx, *[.range_ptr], *[.assert_offset]
 
     ;; Print mismatched char
     ASSERT_STR_LITERAL ASSERT_COLOR_FG_RED
@@ -605,7 +609,7 @@ assert_str_range_actual:
     add rdi, [.range_ptr]
     push rdi
     inc qword [rsp]
-    CCALL rbx, [rdi], 1
+    CALL rbx, [rdi], 1
     ASSERT_STR_LITERAL ASSERT_COLOR_NONE
 
     ;; Print rest
@@ -613,7 +617,7 @@ assert_str_range_actual:
     sub rcx, [.size]
     neg rcx
     pop rdi
-    CCALL rbx, [rdi], rcx
+    CALL rbx, [rdi], rcx
 
     pop rbx
     leave
@@ -631,9 +635,9 @@ assert_str_range_expected:
     push rdi ;; range
     push rsi ;; assert_offset
 
-    CCALL .print, [assert_str_build_hex] ;; Hex
-    CCALL assert_str_pad, ' ', 4
-    CCALL .print, [assert_str_build] ;; Verbatim
+    CALL .print, [assert_str_build_hex] ;; Hex
+    CALL assert_str_pad, ' ', 4
+    CALL .print, [assert_str_build] ;; Verbatim
     ASSERT_STR_LITERAL ASSERT_NL
 
     leave
@@ -651,7 +655,7 @@ assert_str_range_expected:
 
     ;; call print_func
     mov rax, rdi
-    CCALL rax, *[.range_ptr], *[.size]
+    CALL rax, *[.range_ptr], *[.size]
 
     leave
     ret
@@ -675,7 +679,7 @@ assert_str_op:
     mov rdi, [rdx]
     add rdi, rax
 
-    CCALL assert_str_build, rdi, rsi
+    CALL assert_str_build, rdi, rsi
     ret
 
 ;; Converts a range operation index to string representation
@@ -697,7 +701,7 @@ assert_str_ranges_op:
     mov rdi, [rdx]
     add rdi, rax
 
-    CCALL assert_str_build, rdi, rsi
+    CALL assert_str_build, rdi, rsi
     ret
 
 RODATA_SEGMENT

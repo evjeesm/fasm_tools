@@ -451,6 +451,33 @@ macro VTEXT_READ_FIELD vsrc*, offset*, size*, output*
   end if
  }
 
+
+macro VTEXT_READ_TO_VALUE vsrc*, offset*, size*, output*
+ {
+  local char
+  STATIC_ASSERT vsrc#.len >= size, "vsrc overflow"
+  STATIC_ASSERT size <= 8, "Value don't fit in 64 bit variable"
+  output = 0
+  i = 0
+  while i < size
+    VTEXT_LOAD_CHAR vsrc, i, char
+    output = (char shl (i*8)) or output
+    i = i + 1
+  end while
+ }
+
+macro VALUE_TO_VTEXT vdest*, value*, size*
+ {
+  local pad
+  VTEXT_SET vdest, value
+  pad = size - vdest#.len
+  if pad >= 0
+    VTEXT_ASSEMBLE vdest, db pad dup 0
+  else ;; pad is negative
+    STATIC_ASSERT pad >= 0, "arg '", value, "' has larger size than designed"
+  end if
+ }
+
 macro VTEXT_FILL vdest*, vdest_offset*, size*, [char*]
  {
  common
@@ -469,6 +496,27 @@ macro VTEXT_FILL vdest*, vdest_offset*, size*, [char*]
   if vdest_offset+size > vdest#.len
     vdest#.len = vdest_offset+size
   end if
+ }
+
+macro VTEXT_PAD_WITH vdest*, required_size*, [char*]
+ {
+  local pad_size, i
+ common
+  pad_size = required_size - vdest#.len
+  if pad_size < 0
+    pad_size = 0
+  end if
+  VTEXT_RESERVE vdest, required_size
+  i = 0
+  while 1
+ forward
+    if i >= pad_size
+      break
+    end if
+    VTEXT_APPEND vdest, char
+    i = i + 1
+ common
+  end while
  }
 
 macro VTEXT_XOR vsrc*, key*

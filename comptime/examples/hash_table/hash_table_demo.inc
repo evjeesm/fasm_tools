@@ -1,6 +1,6 @@
 
 include '../../fmt.inc'
-include '../../hash_table.inc'
+include '../../containers/hash_table.inc'
 
 HASH_TABLE ..t, 5, 10
 HASH_TABLE_PUT ..t, 'world'

@@ -80,21 +80,54 @@ end if
 macro DEBUG { if _RELEASE = 0 }
 macro END_DEBUG { end if }
 
+BUILD_TYPE_OBJECT = 0
+BUILD_TYPE_EXECUTABLE = 1
+
+ARCH_X32 = 0
+ARCH_X64 = 1
+
 ;;
 ;; Target formats:
 ;;
-macro FORMAT_ELF64_OBJECT
+macro TARGET fmt*, type*
  {
-  format ELF64
-  BUILD_TYPE equ 'OBJECT'
   __MAIN_FILE__ equ __FILE__
- }
+  repeat 1
+  match =ELF64 =EXECUTABLE, fmt type
+  \{
+    format elf64 executable 3
+    break
+  \}
+  match =ELF32 =EXECUTABLE, fmt type
+  \{
+    format elf executable 3
+    break
+  \}
+  match =ELF64 =OBJECT, fmt type
+  \{
+    format elf64
+    break
+  \}
+  match =ELF32 =OBJECT, fmt type
+  \{
+    format elf
+    break
+  \}
+  err ;; wrong format
+  end repeat
 
-macro FORMAT_ELF64_EXECUTABLE
- {
-  format ELF64 executable 3
-  BUILD_TYPE equ 'EXECUTABLE'
-  __MAIN_FILE__ equ __FILE__
+  display "TARGET: ", `fmt, ' ', `type, 0xA
+
+  ;; Set build type
+  match =EXECUTABLE, type \{ BUILD_TYPE = BUILD_TYPE_EXECUTABLE \}
+  match =OBJECT, type     \{ BUILD_TYPE = BUILD_TYPE_OBJECT     \}
+
+  ;; Set arch
+  match =ELF32, fmt \{ ARCH = ARCH_X32 \}
+  match =ELF64, fmt \{ ARCH = ARCH_X64 \}
+
+  ;; Include architecture related headers
+  include '../arch/arch.inc'
  }
 
 ;;
@@ -104,12 +137,11 @@ macro MAIN entry_point*
  {
   repeat 1
   match symbol:, entry_point \{
-    match 'OBJECT', BUILD_TYPE \\{
+    if BUILD_TYPE = BUILD_TYPE_OBJECT
       public symbol
-    \\}
-    match 'EXECUTABLE', BUILD_TYPE \\{
+    else if BUILD_TYPE = BUILD_TYPE_EXECUTABLE
       entry symbol
-    \\}
+    end if
     symbol:
   break
   \}
@@ -140,17 +172,18 @@ macro IMPL_FOR_DEBUG file*, prefix
 ;;
 ;; Compile standalone library file.
 ;;
-macro IMPL_IF_MAIN_FILE format*
+macro IMPL_IF_MAIN_FILE fmt*, type*
  {
-  STATIC_ASSERT `format eq 'ELF64_OBJECT' | `format eq 'ELF64_EXECUTABLE', \
-      "Only OBJECT/EXECUTABLE allowed! given: ", `format
+  if ~ definite __MAIN_FILE__
+    TARGET fmt, type
+  end if
   postpone \{
   if ~ defined __MAIN_FILE__
-      FORMAT_\#format
-      IMPL_SELF
+    TARGET fmt, type
+    IMPL_SELF
   end if
   \}
-}
+ }
 
 ;;
 ;; Facilitate building *.inc standalone library files
@@ -163,16 +196,15 @@ macro IMPL_SELF prefix
 
 macro EXPORT_API prefix
  {
-  if BUILD_TYPE eq 'OBJECT'
-  irpv symbol, __SYMBOLS__
-  \{
-    if ~ prefix eq
-      label prefix\#symbol at symbol
-      public prefix\#symbol
-    else
-      public symbol
-    end if
-  \}
+  if BUILD_TYPE = BUILD_TYPE_OBJECT
+    irpv symbol, __SYMBOLS__ \{
+      if ~ prefix eq
+        label prefix\#symbol at symbol
+        public prefix\#symbol
+      else
+        public symbol
+      end if
+    \}
   end if
  }
 
@@ -188,9 +220,8 @@ macro USE file*, prefix
 
 macro IMPORT_API prefix
  {
-  if BUILD_TYPE eq 'OBJECT'
-    irpv symbol, __SYMBOLS__
-    \{
+  if BUILD_TYPE = BUILD_TYPE_OBJECT
+    irpv symbol, __SYMBOLS__ \{
       if ~ prefix eq
         extrn prefix\#symbol
       else
@@ -225,7 +256,7 @@ macro API symbol*
 macro CODE_SEGMENT
  {
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
-  if BUILD_TYPE eq 'EXECUTABLE'
+  if BUILD_TYPE = BUILD_TYPE_EXECUTABLE
     segment readable executable
   else
     section '.text' executable
@@ -235,7 +266,7 @@ macro CODE_SEGMENT
 macro RODATA_SEGMENT
  {
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
-  if BUILD_TYPE eq 'EXECUTABLE'
+  if BUILD_TYPE = BUILD_TYPE_EXECUTABLE
     segment readable
   else
     section '.rodata' executable
@@ -245,7 +276,7 @@ macro RODATA_SEGMENT
  macro DATA_SEGMENT
  {
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
-  if BUILD_TYPE eq 'EXECUTABLE'
+  if BUILD_TYPE = BUILD_TYPE_EXECUTABLE
     segment readable writable
   else
     section '.data' writable
@@ -255,7 +286,7 @@ macro RODATA_SEGMENT
  macro BSS_SEGMENT
  {
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
-  if BUILD_TYPE eq 'EXECUTABLE'
+  if BUILD_TYPE = BUILD_TYPE_EXECUTABLE
     segment readable writable
   else
     section '.bss' writable

@@ -1,5 +1,5 @@
 include '../../fmt.inc'
-include '../../stack.inc'
+include '../../containers/stack.inc'
 
 STACK s, 8
 

@@ -5,13 +5,26 @@
 !Makefile
 
 !comptime/
+!comptime/containers/
 !comptime/tests/
 !comptime/examples/
-!comptime/examples/**
+!comptime/examples/**/
+!comptime/examples/**/*.asm
+!comptime/examples/**/*.inc
+
+!arch/
+!arch/x32/
+!arch/x64/
+
+!format/
+!format/elf/
+
 !os/
+!os/x32/
+!os/x64/
 !os/tests/
-!lib/
-!lib/tests/
+!lib64/
+!lib64/tests/
 
 !historical/
 
