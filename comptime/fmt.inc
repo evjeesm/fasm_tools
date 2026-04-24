@@ -1,9 +1,10 @@
-if ~ definite _FMT_INC_
-_FMT_INC_ equ 1
-
+restore FASM_MAX_INT
 FASM_MAX_INT equ 0xffff_ffff_ffff_ffff
+restore SIGNED
 SIGNED equ 1
+restore UNSIGNED
 UNSIGNED equ 0
+restore PRECISION
 PRECISION equ 3
 
 ;;
@@ -18,6 +19,7 @@ PRECISION equ 3
 ;;  %P - define a precision for the next double fomatting
 ;; Dot will be substituted by last argument
 ;;  (usefull for printing same thing in different formats)
+purge FMT
 macro FMT [fmt*]
  {
  common
@@ -31,7 +33,8 @@ macro FMT [fmt*]
   define %F 6  ; double
   define %P 7  ; double precision
   negative = 0
-  macro _PARSE type*, val*
+  purge _PARSE
+macro _PARSE type*, val*
   \{
     local _val
     if negative = 1
@@ -95,6 +98,7 @@ macro FMT [fmt*]
   restore %R, %S, %D, %U, %X, %0X, %F, %P, %R
  }
 
+purge DISP_STR
 macro DISP_STR var*
  {
   display '"'
@@ -102,6 +106,7 @@ macro DISP_STR var*
   display '"'
  }
 
+purge DISP_RAW_STR
 macro DISP_RAW_STR var*
  {
   local s,i
@@ -114,6 +119,7 @@ macro DISP_RAW_STR var*
   end while
  }
 
+purge DISP_DEC
 macro DISP_DEC num*, sign:UNSIGNED
  {
   local orig,n,dv,dg
@@ -146,6 +152,7 @@ macro DISP_DEC num*, sign:UNSIGNED
   end if
  }
 
+purge FORMAT_DEC
 macro FORMAT_DEC num*, RENDER*, sign:UNSIGNED
  {
   local orig,n,dv,dg
@@ -178,6 +185,7 @@ macro FORMAT_DEC num*, RENDER*, sign:UNSIGNED
   end if
  }
 
+purge DISP_HEX
 macro DISP_HEX num*, base_prefix:'0x', sep:'_', sep_freq:4
  {
   local n,nib,i,shft,d
@@ -211,6 +219,7 @@ _EXP_LEN = 11
 _EXP_MASK = (1 shl _EXP_LEN) - 1
 _BIT_LEN = 64
 
+purge DISP_DOUBLE
 macro DISP_DOUBLE num*, precision:PRECISION
  {
   local n,mantisa,sign,exp,actual_exp
@@ -240,6 +249,7 @@ macro DISP_DOUBLE num*, precision:PRECISION
   end if
 }
 
+purge _DOUBLE_INF
 macro _DOUBLE_INF sign*
  {
   if sign
@@ -250,6 +260,7 @@ macro _DOUBLE_INF sign*
   display 'inf'
  }
 
+purge _DOUBLE_SCIENTIFIC_NOTATION
 macro _DOUBLE_SCIENTIFIC_NOTATION actual_exp*, mantisa*, precision*
  {
   ; normalized mantissa fraction = norm_mantisa / 2^_MANTISA_LEN
@@ -273,6 +284,7 @@ macro _DOUBLE_SCIENTIFIC_NOTATION actual_exp*, mantisa*, precision*
   display ')'
  }
 
+purge _DOUBLE_FLOATING_POINT_NOTATION
 macro _DOUBLE_FLOATING_POINT_NOTATION actual_exp*, mantisa*, precision*
  {
   local scaled_mantisa, integer_part, fractional_part, norm_mantisa
@@ -299,5 +311,3 @@ macro _DOUBLE_FLOATING_POINT_NOTATION actual_exp*, mantisa*, precision*
     fractional_part = fractional_part and _MANTISA_MASK
   end repeat
  }
-
- end if ;; _FMT_INC_

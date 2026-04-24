@@ -1,6 +1,4 @@
-if ~ definite _CALL_INC_
-_CALL_INC_ equ 1
-
+purge CALL
 macro CALL func*, [args]
  {
 common
@@ -59,6 +57,3 @@ reverse
 common
     call func
  }
-
-end if ;; _CALL_INC_
-

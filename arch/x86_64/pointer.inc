@@ -1,4 +1,4 @@
-include 'comptime.inc'
+include 'comptime/comptime.inc'
 
 ;; Assing rip-relative pointer
 struc REL_PTR [symbol*]

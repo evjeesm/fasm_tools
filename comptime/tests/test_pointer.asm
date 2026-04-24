@@ -1,22 +1,18 @@
-include 'comptime.inc'
-FORMAT_ELF64_OBJECT
+include 'build.inc'
 
-include 'pointer.inc'
-include 'call.inc'
-include 'syscall.inc'
-include 'inl_io.inc'
-include 'inl_itoa.inc'
+TARGET ELF64, OBJECT
+include 'os/inl_io.inc'
 
 CODE_SEGMENT
 MAIN _start:
 
-    REL_TO_ABS rdi, msg1p
-    PRINT_CSTR [rdi]
+  REL_TO_ABS rdi, msg1p
+  PRINT_CSTR [rdi]
 
-    DEREF_REL rdi, **[msg2ppp]
-    PRINT_CSTR [rdi]
+  DEREF_REL rdi, **[msg2ppp]
+  PRINT_CSTR [rdi]
 
-    SYSCALL EXIT, 0
+  SYSCALL EXIT, 0
 
 DATA_SEGMENT
 

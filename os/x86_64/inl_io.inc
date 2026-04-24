@@ -1,8 +1,7 @@
-;; include 'arch/x64/syscall.inc'
-;; include 'arch/x64/call.inc'
-;; include 'arch/x64/syscall_nr.inc'
-
-include 'arch/arch.inc'
+include 'arch/x86_64/syscall.inc'
+include 'arch/x86_64/call.inc'
+include 'arch/x86_64/syscall_nr.inc'
+include 'arch/x86_64/pointer.inc'
 
 include 'inl_itoa.inc'
 include 'inl_cstr.inc'
@@ -43,10 +42,10 @@ macro PRINT_INL [bytes*]
  {
  common
   local .msg, .code
-    jmp .code
-.msg BUFFER bytes
-.code:
-    PRINT [.msg], .msg#.size
+  jmp .code
+  msg BUFFER bytes
+  code:
+  PRINT [.msg], .msg#.size
  }
 
  macro PRINT_STACK [bytes*]

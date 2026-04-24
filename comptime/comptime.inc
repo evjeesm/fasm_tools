@@ -1,9 +1,7 @@
-if ~ definite _COMPTIME_INC_
-_COMPTIME_INC_ equ 1
-
 ;;
 ;; Classical compile time assert with message.
 ;;
+purge STATIC_ASSERT
 macro STATIC_ASSERT cond*, [msg*]
  {
  common
@@ -16,12 +14,61 @@ macro STATIC_ASSERT cond*, [msg*]
   end if
  }
 
-macro REQUIRE [include_tag*]
+purge TODO
+macro TODO [msg*]
  {
- forward
-  STATIC_ASSERT definite include_tag, 'Dependency "', `include_tag, '" is missing!'
+ common
+  display \
+    "[31m", \
+    "Unimplemented: ", msg, \
+    "[0m"
+  err
  }
 
+purge CRITICAL
+macro CRITICAL [msg*]
+ {
+ common
+  display \
+    "[31m", \
+    "Critical: ", msg, \
+    "[0m"
+  err
+ }
+
+purge INFO
+macro INFO [msg*]
+ {
+ common
+  display \
+    "[36m", \
+    "INFO: ", msg, \
+    "[0m"
+ }
+
+purge DEBUG_MSG
+macro DEBUG_MSG [msg*]
+ {
+ common
+  DEBUG
+    display \
+      "[37m", \
+      ": ", msg, \
+      "[0m"
+  END_DEBUG
+ }
+
+purge WARNING
+macro WARNING [msg*]
+ {
+ common
+  display \
+    "[33m", \
+    "Warning: ", msg, \
+    "[0m"
+ }
+
+purge DISP_LINE_NUM
 macro DISP_LINE_NUM line*
  {
   local orig,n,dv,dg
@@ -42,6 +89,7 @@ macro DISP_LINE_NUM line*
 
 ;; Format code as it is.
 ;; Enclose in angular brackets
+purge DISP_CODE_LINE
 macro DISP_CODE_LINE [line*]
  {
  forward
@@ -54,6 +102,7 @@ macro DISP_CODE_LINE [line*]
 
 ;; Assemble line and print.
 ;; Enclose in angular brackets
+purge TRACE
 macro TRACE line*
  {
   display 'TRACE ',__FILE__,'['
@@ -63,7 +112,14 @@ macro TRACE line*
   line
  }
 
-;; Assemble line
-macro NO_TRACE line* { line }
-
- end if ;; _COMPTIME_INC_
+purge DEBUG_TRACE
+macro DEBUG_TRACE line*
+ {
+  DEBUG
+    display 'TRACE ',__FILE__,'['
+    DISP_LINE_NUM __LINE__
+    display ']: '
+    DISP_CODE_LINE <line>
+  END_DEBUG
+  line
+ }

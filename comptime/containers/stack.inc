@@ -1,9 +1,7 @@
-if ~ definite _STACK_INC_
-_STACK_INC_ equ 1
+include '../comptime.inc'
+include '../vtext.inc'
 
-include 'comptime.inc'
-include 'vtext.inc'
-
+purge STACK
 macro STACK stack*, value_size*, capacity:10
  {
   VTEXT_PREALLOC stack#.stack.tmp, value_size
@@ -14,6 +12,7 @@ macro STACK stack*, value_size*, capacity:10
   stack#.len = value_size * capacity
  }
 
+purge STACK_GROW
 macro STACK_GROW stack*
  {
   if stack#.stack.size = stack#.stack.cap
@@ -23,6 +22,7 @@ macro STACK_GROW stack*
   end if
  }
 
+purge STACK_PUSH
 macro STACK_PUSH stack*, [value*]
  {
  forward
@@ -34,6 +34,7 @@ macro STACK_PUSH stack*, [value*]
   STACK_GROW stack
  }
 
+purge STACK_PUSH_VTEXT
 macro STACK_PUSH_VTEXT stack*, [vtext*]
  {
  forward
@@ -45,6 +46,7 @@ macro STACK_PUSH_VTEXT stack*, [vtext*]
   STACK_GROW stack
  }
 
+purge STACK_PEEK
 macro STACK_PEEK stack*, voutput*
  {
   local offset
@@ -56,14 +58,17 @@ macro STACK_PEEK stack*, voutput*
   VTEXT_READ voutput, stack, offset, stack#.stack.value_size
  }
 
+purge STACK_POP
 macro STACK_POP stack*
  {
   STATIC_ASSERT stack#.stack.size > 0, 'Stack is empty'
   stack#.stack.size = stack#.stack.size - 1
  }
 
+purge STACK_CLEAR
 macro STACK_CLEAR stack* { stack#.stack.size = 0 }
 
+purge STACK_IS_EMPTY
 macro STACK_IS_EMPTY stack*, output*
  {
   if stack#.stack.size = 0
@@ -73,9 +78,12 @@ macro STACK_IS_EMPTY stack*, output*
   end if
  }
 
+purge WHILE_NOT_EMPTY
 macro WHILE_NOT_EMPTY stack* { while stack#.stack.size }
+purge END_WHILE_NOT_EMPTY
 macro END_WHILE_NOT_EMPTY    { end while         }
 
+purge VTEXT_STRUCT_FIELD
 macro VTEXT_STRUCT_FIELD name*, field*, def*
  {
   local offset, end_offset
@@ -86,6 +94,7 @@ macro VTEXT_STRUCT_FIELD name*, field*, def*
   name#.#field#.size = end_offset - offset
  }
 
+purge VTEXT_STRUCT
 macro VTEXT_STRUCT name*, [args*]
  {
  common
@@ -112,5 +121,3 @@ macro VTEXT_STRUCT name*, [args*]
   end virtual
   name#.len = size
  }
-
-end if ;; ~ definite _STACK_INC_

@@ -1,10 +1,8 @@
-if ~ definite _HASH_TABLE_INC_
-_HASH_TABLE_INC_ equ 1
-
-include 'comptime.inc'
+include '../comptime.inc'
+include '../vtext.inc'
 include 'hash.inc'
-include 'vtext.inc'
 
+purge HASH_TABLE
 macro HASH_TABLE tbl*, value_size*, capacity:10
  {
   VTEXT_PREALLOC tbl#.tbl.value_tmp, value_size
@@ -15,12 +13,14 @@ macro HASH_TABLE tbl*, value_size*, capacity:10
   tbl#.len = value_size * capacity
  }
 
+purge HASH_TABLE_PUT
 macro HASH_TABLE_PUT tbl*, value*
  {
   _CONV_VALUE_TO_VTEXT tbl#.tbl.value_tmp, value, tbl#.tbl.value_size
   HASH_TABLE_PUT_VTEXT tbl, tbl#.tbl.value_tmp
  }
 
+purge HASH_TABLE_PUT_VTEXT
 macro HASH_TABLE_PUT_VTEXT tbl*, vtext*
  {
   local value_hash, offset, start_index, index, equal, is_zero
@@ -48,12 +48,14 @@ macro HASH_TABLE_PUT_VTEXT tbl*, vtext*
   end while
  }
 
+purge HASH_TABLE_HAS_VALUE
 macro HASH_TABLE_HAS_VALUE tbl*, value*, output*
  {
   _CONV_VALUE_TO_VTEXT tbl#.tbl.value_tmp, value, tbl#.tbl.value_size
   HASH_TABLE_HAS_VTEXT tbl, tbl#.tbl.value_tmp, output
  }
 
+purge HASH_TABLE_HAS_VTEXT
 macro HASH_TABLE_HAS_VTEXT tbl*, vtext*, output*
  {
   local value_hash, offset, start_index, index, equal
@@ -78,12 +80,14 @@ macro HASH_TABLE_HAS_VTEXT tbl*, vtext*, output*
   end while
  }
 
+purge HASH_TABLE_REMOVE
 macro HASH_TABLE_REMOVE tbl*, value*
  {
   _CONV_VALUE_TO_VTEXT tbl#.tbl.value_tmp, value, tbl#.tbl.value_size
   HASH_TABLE_REMOVE_VTEXT tbl, tbl#.tbl.value_tmp
  }
 
+purge HASH_TABLE_REMOVE_VTEXT
 macro HASH_TABLE_REMOVE_VTEXT tbl*, vtext*
  {
   local value_hash, offset, start_index, index, equal, is_zero
@@ -107,11 +111,13 @@ macro HASH_TABLE_REMOVE_VTEXT tbl*, vtext*
   end while
  }
 
+purge HASH_TABLE_RESET
 macro HASH_TABLE_RESET tbl*
  {
   VTEXT_FILL tbl, 0, tbl#.tbl.capacity * tbl#.tbl.value_size, 0x0
  }
 
+purge _CONV_VALUE_TO_VTEXT
 macro _CONV_VALUE_TO_VTEXT vdest*, value*, value_size*
  {
   local pad
@@ -123,5 +129,3 @@ macro _CONV_VALUE_TO_VTEXT vdest*, value*, value_size*
     STATIC_ASSERT pad >= 0, "arg '", value, "' has larger size that tbl value"
   end if
  }
-
-end if ;; _HASH_TABLE_INC_

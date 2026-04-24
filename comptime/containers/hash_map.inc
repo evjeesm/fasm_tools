@@ -1,10 +1,8 @@
-if ~ definite _HASH_MAP_INC_
-_HASH_MAP_INC_ equ 1
-
-include 'comptime.inc'
+include '../comptime.inc'
+include '../vtext.inc'
 include 'hash.inc'
-include 'vtext.inc'
 
+purge HASH_MAP
 macro HASH_MAP map*, key_size*, value_size*, capacity:10
  {
   VTEXT_PREALLOC map#.map.key_tmp, key_size
@@ -17,6 +15,7 @@ macro HASH_MAP map*, key_size*, value_size*, capacity:10
   map#.len = (map#.map.entry_size)*capacity
  }
 
+purge HASH_MAP_PUT
 macro HASH_MAP_PUT map*, [key*, value*]
  {
  forward
@@ -25,6 +24,7 @@ macro HASH_MAP_PUT map*, [key*, value*]
   HASH_MAP_PUT_VTEXT map, map#.map.key_tmp, map#.map.value_tmp
  }
 
+purge HASH_MAP_PUT_VTEXT
 macro HASH_MAP_PUT_VTEXT map*, [vtext_key*, vtext_value*]
  {
  forward
@@ -52,6 +52,7 @@ macro HASH_MAP_PUT_VTEXT map*, [vtext_key*, vtext_value*]
   end while
  }
 
+purge HASH_MAP_GET
 macro HASH_MAP_GET map*, key*, status*, output*
  {
   VALUE_TO_VTEXT map#.map.key_tmp, key, map#.map.key_size
@@ -65,6 +66,7 @@ macro HASH_MAP_GET map*, key*, status*, output*
   end if
  }
 
+purge HASH_MAP_GET_VTEXT
 macro HASH_MAP_GET_VTEXT map*, vtext_key*, voutput*
  {
   local key_hash, offset, start_index, index, is_zero, equal
@@ -93,12 +95,14 @@ macro HASH_MAP_GET_VTEXT map*, vtext_key*, voutput*
   end while
  }
 
+purge HASH_MAP_REMOVE
 macro HASH_MAP_REMOVE map*, key*
  {
   VALUE_TO_VTEXT map#.map.key_tmp, key, map#.map.key_size
   HASH_MAP_REMOVE_VTEXT map, map#.map.key_tmp
  }
 
+purge HASH_MAP_REMOVE_VTEXT
 macro HASH_MAP_REMOVE_VTEXT map*, vtext_key*
  {
   local key_hash, offset, start_index, index, is_zero, equal
@@ -125,9 +129,8 @@ macro HASH_MAP_REMOVE_VTEXT map*, vtext_key*
   end while
  }
 
+purge HASH_MAP_RESET
 macro HASH_MAP_RESET map*
  {
   VTEXT_FILL map, 0, map#.map.capacity * map#.map.entry_size, 0x0
  }
-
-end if ;; _HASH_MAP_INC_

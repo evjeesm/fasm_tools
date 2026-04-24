@@ -1,8 +1,6 @@
-if ~ definite _VTEXT_INC_
-_VTEXT_INC_ equ 1
-
 VTEXT_DEFAULT_SIZE = 1024*1024 ;; 1MB
 
+purge VTEXT_PREALLOC
 macro VTEXT_PREALLOC name*, cap:VTEXT_DEFAULT_SIZE
  {
   virtual at 0
@@ -13,12 +11,14 @@ macro VTEXT_PREALLOC name*, cap:VTEXT_DEFAULT_SIZE
     name#.len = 0
  }
 
+purge VTEXT_RESET
 macro VTEXT_RESET name*
  {
    name#.len = 0
  }
 
 ;; Creates a text in a virtual address space
+purge VTEXT
 macro VTEXT name*, [arg*]
  {
  common
@@ -31,6 +31,7 @@ macro VTEXT name*, [arg*]
  }
 
 ;; Read entire file into a virtual address space
+purge VTEXT_FILE
 macro VTEXT_FILE name*, filepath*
  {
   virtual at 0
@@ -45,6 +46,7 @@ macro VTEXT_FILE name*, filepath*
 ;;            if you append single byte sequencially
 ;;            54 Kb is max you can reach before memory runs out
 ;;            with max memory setting (-m 2000000) 2G
+purge VTEXT_APPEND_
 macro VTEXT_APPEND_ name*, [arg*]
  {
  common
@@ -55,6 +57,7 @@ macro VTEXT_APPEND_ name*, [arg*]
   end virtual
  }
 
+purge VTEXT_ASSEMBLE
 macro VTEXT_ASSEMBLE name*, [line*]
  {
  common
@@ -76,6 +79,7 @@ macro VTEXT_ASSEMBLE name*, [line*]
   end virtual
  }
 
+purge VTEXT_APPEND
 macro VTEXT_APPEND name*, [arg*]
  {
  common
@@ -96,6 +100,7 @@ macro VTEXT_APPEND name*, [arg*]
   end virtual
  }
 
+purge VTEXT_APPEND_AS_IS
 macro VTEXT_APPEND_AS_IS name*, [arg*]
  {
  forward
@@ -106,6 +111,7 @@ macro VTEXT_APPEND_AS_IS name*, [arg*]
  }
 
 ;; Enlarge vtext with additional 'capacity'
+purge VTEXT_EXPAND
 macro VTEXT_EXPAND name*, capacity*
  {
   virtual name
@@ -115,6 +121,7 @@ macro VTEXT_EXPAND name*, capacity*
  }
 
 ;; Reserve certain amount of bytes
+purge VTEXT_RESERVE
 macro VTEXT_RESERVE name*, capacity*
  {
   if name#.capacity < capacity
@@ -126,6 +133,7 @@ macro VTEXT_RESERVE name*, capacity*
 ;; Param BAKE_CHUNK - is a macro of form:
 ;;   `BAKE_CHUNK dest, vsrc, size, offset`
 ;;
+purge VTEXT_BAKE
 macro VTEXT_BAKE dest*, vsrc*, BAKE_CHUNK*, until:?, init_offset:0, init_chunk_sz:8
  {
   local offset, chunk_sz, _until
@@ -149,6 +157,7 @@ macro VTEXT_BAKE dest*, vsrc*, BAKE_CHUNK*, until:?, init_offset:0, init_chunk_s
  }
 
 ;; Generate immediate movs of the virutal text to a destination
+purge VTEXT_BAKE_MOVS
 macro VTEXT_BAKE_MOVS dest*, vsrc*
  {
   local n, d, text_len, _STORE
@@ -157,7 +166,8 @@ macro VTEXT_BAKE_MOVS dest*, vsrc*
   text_len = vsrc#.len
   while n < text_len
     repeat (text_len-n)/d
-      macro _STORE dest, src, size, offset
+      purge _STORE
+macro _STORE dest, src, size, offset
       \{
        local chunk
         load chunk size from src:offset
@@ -178,6 +188,7 @@ macro VTEXT_BAKE_MOVS dest*, vsrc*
  }
 
 ;; Generate immediate stack pushes of the virtual text
+purge VTEXT_BAKE_STACK
 macro VTEXT_BAKE_STACK vsrc*
  {
   local n, d, text_len, _STORE
@@ -186,7 +197,8 @@ macro VTEXT_BAKE_STACK vsrc*
   d = 4
   while n > 0
     repeat n / d
-      macro _STORE src, size, offset
+      purge _STORE
+macro _STORE src, size, offset
       \{
         local chunk
         if size = 8
@@ -215,6 +227,7 @@ macro VTEXT_BAKE_STACK vsrc*
   purge _STORE
  }
 
+purge VTEXT_SLICE
 macro VTEXT_SLICE vsrc*, start_offset:*, end_offset*
  {
   local i, b
@@ -228,6 +241,7 @@ macro VTEXT_SLICE vsrc*, start_offset:*, end_offset*
   end while
  }
 
+purge VTEXT_SET
 macro VTEXT_SET vdest*, [arg*]
  {
  common
@@ -246,6 +260,7 @@ macro VTEXT_SET vdest*, [arg*]
   vdest#.len = tmp_size
  }
 
+purge VTEXT_CMP
 macro VTEXT_CMP vtext*, vref*, vref_offset*, size*, output*
  {
   local i, c1, c2, equal
@@ -267,6 +282,7 @@ macro VTEXT_CMP vtext*, vref*, vref_offset*, size*, output*
   end if
  }
 
+purge VTEXT_RANGE_CHAR_EQ
 macro VTEXT_RANGE_CHAR_EQ vtext*, vtext_offset*, size*, char*, output*
  {
   STATIC_ASSERT vtext_offset + size <= vtext#.len, "vtext overflow"
@@ -284,6 +300,7 @@ macro VTEXT_RANGE_CHAR_EQ vtext*, vtext_offset*, size*, char*, output*
   output = equal
  }
 
+purge VTEXT_COPY
 macro VTEXT_COPY vdest*, vsrc*
  {
   local i,b
@@ -297,6 +314,7 @@ macro VTEXT_COPY vdest*, vsrc*
   vdest#.len = vsrc#.len
  }
 
+purge VTEXT_COPY_RANGE
 macro VTEXT_COPY_RANGE vdest*, vdest_offset*, vsrc*, vsrc_offset*, size*
  {
   local i,b
@@ -310,6 +328,7 @@ macro VTEXT_COPY_RANGE vdest*, vdest_offset*, vsrc*, vsrc_offset*, size*
   end while
  }
 
+purge VTEXT_WRITE
 macro VTEXT_WRITE vdest*, vdest_offset*, vsrc*
  {
   local i,b
@@ -322,6 +341,7 @@ macro VTEXT_WRITE vdest*, vdest_offset*, vsrc*
   end while
  }
 
+purge VTEXT_READ
 macro VTEXT_READ vdest*, vsrc*, vsrc_offset*, size*
  {
   local i,b
@@ -336,10 +356,12 @@ macro VTEXT_READ vdest*, vsrc*, vsrc_offset*, size*
   vdest#.len = size
  }
 
+purge VTEXT_DISPLAY
 macro VTEXT_DISPLAY vsrc*, offset:0, until:?
  {
   local _PRINT, _until
-  macro _PRINT dest, src, _size, _offset
+  purge _PRINT
+macro _PRINT dest, src, _size, _offset
   \{
     local chunk,i
     if _size = 8
@@ -369,6 +391,7 @@ macro VTEXT_DISPLAY vsrc*, offset:0, until:?
   purge _PRINT
  }
 
+purge VTEXT_DISPLAY_NULLTERM
 macro VTEXT_DISPLAY_NULLTERM vsrc*, offset:0
  {
   local char,_offset
@@ -383,10 +406,12 @@ macro VTEXT_DISPLAY_NULLTERM vsrc*, offset:0
   end while
  }
 
+purge VTEXT_HEX
 macro VTEXT_HEX vsrc*, offset:0, until:?
  {
   local _PRINT, _HEX, _until
-  macro _PRINT dest, src, _size, _offset
+  purge _PRINT
+macro _PRINT dest, src, _size, _offset
   \{
     local chunk
     load chunk byte from src:_offset
@@ -395,7 +420,8 @@ macro VTEXT_HEX vsrc*, offset:0, until:?
     end if
     _HEX chunk
   \}
-  macro _HEX num*
+  purge _HEX
+macro _HEX num*
   \{
    local n,nib,i,shft,d
    n = (num) and 0xffff_ffff_ffff_ffff
@@ -428,16 +454,19 @@ macro VTEXT_HEX vsrc*, offset:0, until:?
   purge _HEX
  }
 
+purge VTEXT_LOAD_CHAR
 macro VTEXT_LOAD_CHAR vsrc*, offset*, output*
  {
   load output byte from vsrc:offset
  }
 
+purge VTEXT_STORE_CHAR
 macro VTEXT_STORE_CHAR vdest*, offset*, char*
  {
   store byte char at vdest:offset
  }
 
+purge VTEXT_READ_FIELD
 macro VTEXT_READ_FIELD vsrc*, offset*, size*, output*
  {
   if size = 1
@@ -452,6 +481,7 @@ macro VTEXT_READ_FIELD vsrc*, offset*, size*, output*
  }
 
 
+purge VTEXT_READ_TO_VALUE
 macro VTEXT_READ_TO_VALUE vsrc*, offset*, size*, output*
  {
   local char
@@ -466,6 +496,7 @@ macro VTEXT_READ_TO_VALUE vsrc*, offset*, size*, output*
   end while
  }
 
+purge VALUE_TO_VTEXT
 macro VALUE_TO_VTEXT vdest*, value*, size*
  {
   local pad
@@ -478,6 +509,7 @@ macro VALUE_TO_VTEXT vdest*, value*, size*
   end if
  }
 
+purge VTEXT_FILL
 macro VTEXT_FILL vdest*, vdest_offset*, size*, [char*]
  {
  common
@@ -498,6 +530,7 @@ macro VTEXT_FILL vdest*, vdest_offset*, size*, [char*]
   end if
  }
 
+purge VTEXT_PAD_WITH
 macro VTEXT_PAD_WITH vdest*, required_size*, [char*]
  {
   local pad_size, i
@@ -519,6 +552,7 @@ macro VTEXT_PAD_WITH vdest*, required_size*, [char*]
   end while
  }
 
+purge VTEXT_XOR
 macro VTEXT_XOR vsrc*, key*
  {
   local b
@@ -528,6 +562,7 @@ macro VTEXT_XOR vsrc*, key*
   end repeat
  }
 
+purge ASSEMBLE
 macro ASSEMBLE dest*, vsrc*, size*, offset*
  {
   local chunk
@@ -545,5 +580,3 @@ macro ASSEMBLE dest*, vsrc*, size*, offset*
     db chunk
   end if
  }
-
-end if ;; _VTEXT_INC_

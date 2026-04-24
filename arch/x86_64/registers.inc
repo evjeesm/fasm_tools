@@ -1,16 +1,20 @@
-if ~ definite _REGS_AMD64_INC_
-_REGS_AMD64_INC_ equ 1
-
+restore X64_REGS
 X64_REGS equ rax,rbx,rdx,rcx,rsi,rdi,rsp,rbp,\
              r8,r9,r10,r11,r12,r13,r14,r15
 
+restore X32_REGS
 X32_REGS equ eax,ebx,edx,ecx,esi,edi,esp,ebp,\
              r8d,r9d,r10d,r11d,r12d,r13d,r14d,r15d
 
+restore X16_REGS
 X16_REGS equ ax,bx,dx,cx,si,di,sp,bp,\
              r8w,r9w,r10w,r11w,r12w,r13w,r14w,r15w
 
+restore X8_REGS
 X8_REGS  equ al,ah,bl,bh,dl,dh,cl,ch,sil,dil,spl,bpl,\
              r8b,r9b,r10b,r11b,r12b,r13b,r14b,r15b
 
-end if ;; _REGS_AMD64_INC_
+;; Can we generalize regs across platforms?
+QREG_0 equ rax
+QREG_1 equ rbx
+QREG_2 equ rdx

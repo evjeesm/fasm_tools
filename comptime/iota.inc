@@ -1,15 +1,16 @@
-if ~ definite _IOTA_INC_
-_IOTA_INC_ equ 1
-
+purge IOTA_SET_STRIDE
 macro IOTA_SET_STRIDE value:1
  { IOTA_stride = value }
 
+purge IOTA_COUNTER_FUNC
 macro IOTA_COUNTER_FUNC
  { IOTA_count = IOTA_count + IOTA_stride }
 
+purge IOTA_STRIDE_FUNC
 macro IOTA_STRIDE_FUNC
  { IOTA_stride = IOTA_stride }
 
+purge IOTA
 macro IOTA expr*
  {
   if ~ definite IOTA_count
@@ -35,5 +36,3 @@ macro IOTA expr*
   IOTA_COUNTER_FUNC
   IOTA_STRIDE_FUNC
  }
-
-end if ;; _IOTA_INC_

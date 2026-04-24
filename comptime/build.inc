@@ -1,6 +1,3 @@
-if ~ definite _BUILD_INC_
-_BUILD_INC_ equ 1
-
 include 'comptime.inc'
 
 ;; Parse compilation target
@@ -14,18 +11,22 @@ end if
 ;; that can be excluded from release build.
 ;; Debug mode is default.
 ;; To compile in release mode: fasm -d RELEASE=1 code.asm
+purge DEBUG
 macro DEBUG { if _RELEASE = 0 }
+purge END_DEBUG
 macro END_DEBUG { end if }
 
-BUILD_TYPE_OBJECT = 0
-BUILD_TYPE_EXECUTABLE = 1
+;; using fix, so that 'match =ARCH_X86, ARCH {}' works
+BUILD_TYPE_OBJECT fix 0
+BUILD_TYPE_EXECUTABLE fix 1
 
-ARCH_X86 = 0
-ARCH_X86_64 = 1
+ARCH_X86 fix 0
+ARCH_X86_64 fix 1
 
 ;;
 ;; Target formats:
 ;;
+purge TARGET
 macro TARGET fmt*, type*
  {
   __MAIN_FILE__ equ __FILE__
@@ -33,6 +34,7 @@ macro TARGET fmt*, type*
   display "TARGET: ", `fmt, ' ', `type, 0xA
  }
 
+purge SET_FORMAT
 macro SET_FORMAT fmt*, type*
  {
   repeat 1
@@ -60,12 +62,12 @@ macro SET_FORMAT fmt*, type*
   end repeat
 
   ;; Set build type
-  match =EXECUTABLE, type \{ BUILD_TYPE = BUILD_TYPE_EXECUTABLE \}
-  match =OBJECT, type     \{ BUILD_TYPE = BUILD_TYPE_OBJECT     \}
+  match =EXECUTABLE, type \{ BUILD_TYPE equ BUILD_TYPE_EXECUTABLE \}
+  match =OBJECT, type     \{ BUILD_TYPE equ BUILD_TYPE_OBJECT     \}
 
   ;; Set arch
-  match =ELF32, fmt \{ ARCH = ARCH_X86 \}
-  match =ELF64, fmt \{ ARCH = ARCH_X86_64 \}
+  match =ELF32, fmt \{ ARCH equ ARCH_X86 \}
+  match =ELF64, fmt \{ ARCH equ ARCH_X86_64 \}
 
   ;; Include architecture related headers
   include '../arch/arch.inc'
@@ -74,6 +76,7 @@ macro SET_FORMAT fmt*, type*
 ;;
 ;; Target agnostic entry point
 ;;
+purge MAIN
 macro MAIN entry_point*
  {
   repeat 1
@@ -93,6 +96,7 @@ macro MAIN entry_point*
 ;;
 ;; Macro that includes file with implementation
 ;;
+purge IMPL
 macro IMPL file*, prefix
  {
   include file
@@ -103,6 +107,7 @@ macro IMPL file*, prefix
 ;;
 ;; Will be implemented only in DEBUG mode
 ;;
+purge IMPL_FOR_DEBUG
 macro IMPL_FOR_DEBUG file*, prefix
  {
   DEBUG
@@ -113,6 +118,7 @@ macro IMPL_FOR_DEBUG file*, prefix
 ;;
 ;; Compile standalone library file.
 ;;
+purge IMPL_IF_MAIN_FILE
 macro IMPL_IF_MAIN_FILE fmt*, type*
  {
   if ~ defined __MAIN_FILE__
@@ -128,12 +134,14 @@ macro IMPL_IF_MAIN_FILE fmt*, type*
 ;;
 ;; Facilitate building *.inc standalone library files
 ;;
+purge IMPL_SELF
 macro IMPL_SELF prefix
  {
   EXPORT_API prefix
   __IMPLEMENTATION__
  }
 
+purge EXPORT_API
 macro EXPORT_API prefix
  {
   if BUILD_TYPE = BUILD_TYPE_OBJECT
@@ -152,18 +160,21 @@ macro EXPORT_API prefix
 ;; Includes file and adds extern symbols
 ;; when compiling an object
 ;;
+purge USE
 macro USE file*, prefix
  {
   include file
   IMPORT_API prefix
  }
 
+purge USE_SHARED
 macro USE_SHARED file*, prefix
  {
   include file
   IMPORT_API_SHARED prefix
  }
 
+purge IMPORT_API
 macro IMPORT_API prefix
  {
   if BUILD_TYPE = BUILD_TYPE_OBJECT
@@ -177,12 +188,14 @@ macro IMPORT_API prefix
   end if
  }
 
+purge EXTRN_PLT
 macro EXTRN_PLT sym*
  {
   extrn `sym as _#sym
   sym = PLT _#sym
  }
 
+purge IMPORT_API_SHARED
 macro IMPORT_API_SHARED prefix
  {
   if BUILD_TYPE = BUILD_TYPE_OBJECT
@@ -203,6 +216,7 @@ macro IMPORT_API_SHARED prefix
 ;;
 ;; Will be used only in DEBUG mode
 ;;
+purge USE_FOR_DEBUG
 macro USE_FOR_DEBUG file*, prefix
  {
   DEBUG
@@ -213,6 +227,7 @@ macro USE_FOR_DEBUG file*, prefix
 ;;
 ;; Will be used only in DEBUG mode
 ;;
+purge USE_SHARED_FOR_DEBUG
 macro USE_SHARED_FOR_DEBUG file*, prefix
  {
   DEBUG
@@ -223,6 +238,7 @@ macro USE_SHARED_FOR_DEBUG file*, prefix
 ;;
 ;; Pushes symbols into an API list
 ;;
+purge API
 macro API symbol*
  {
   __SYMBOLS__ equ symbol
@@ -231,6 +247,7 @@ macro API symbol*
 ;;
 ;; Target agnostic segment/section marking
 ;;
+purge CODE_SEGMENT
 macro CODE_SEGMENT
  {
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
@@ -241,6 +258,7 @@ macro CODE_SEGMENT
   end if
  }
 
+purge RODATA_SEGMENT
 macro RODATA_SEGMENT
  {
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
@@ -251,7 +269,8 @@ macro RODATA_SEGMENT
   end if
  }
 
- macro DATA_SEGMENT
+purge DATA_SEGMENT
+macro DATA_SEGMENT
  {
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
   if BUILD_TYPE = BUILD_TYPE_EXECUTABLE
@@ -261,7 +280,8 @@ macro RODATA_SEGMENT
   end if
  }
 
- macro BSS_SEGMENT
+purge BSS_SEGMENT
+macro BSS_SEGMENT
  {
   STATIC_ASSERT defined BUILD_TYPE, "BUILD_TYPE should be defiend!"
   if BUILD_TYPE = BUILD_TYPE_EXECUTABLE
@@ -270,5 +290,3 @@ macro RODATA_SEGMENT
     section '.bss' writable
   end if
  }
-
-end if;; _BUILD_INC_

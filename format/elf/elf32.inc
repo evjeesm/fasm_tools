@@ -1,5 +1,3 @@
-if ~ definite _ELF64_INC_
-_ELF64 equ 1
 ;; parsing elf format functionality
 
 ;; uint16_t   Elf64_Half;
@@ -25,6 +23,7 @@ ELFMAG equ 0x464c_457f
 
 EI_NIDENT equ 16
 
+restruc Elf64_Ehdr
 struc Elf64_Ehdr
  {
   .e_ident       db EI_NIDENT dup ? ;; Magic number and other info
@@ -57,6 +56,7 @@ EM_X86_64 equ 62
 ;;...
 
 ;; Section header.
+restruc Elf64_Shdr
 struc Elf64_Shdr
  {
   .sh_name       dd ?    ;; Section name (string tbl index)
@@ -76,6 +76,7 @@ virtual at 0
 end virtual
 
 ;; Symbol table entry.
+restruc Elf64_Sym
 struc Elf64_Sym
  {
   .st_name       dd ?    ;; Symbol name (string tbl index)
@@ -91,6 +92,7 @@ virtual at 0
 end virtual
 
 ;; Relocation table entry without addend (in section of type SHT_REL).
+restruc Elf64_Rel
 struc Elf64_Rel
  {
   .r_offset      dq ?    ;; Address
@@ -102,6 +104,7 @@ virtual at 0
 end virtual
 
 ;; Relocation table entry with addend (in section of type SHT_RELA).
+restruc Elf64_Rela
 struc Elf64_Rela
  {
   .r_offset      dq ?    ;; Address
@@ -114,6 +117,7 @@ virtual at 0
 end virtual
 
 ;; Program segment header.
+restruc Elf64_Phdr
 struc Elf64_Phdr
  {
   .p_type        dd ?    ;; Segment type
@@ -140,6 +144,7 @@ PF_W equ (1 shl 1)  ;; Segment is writable
 PF_R equ (1 shl 2)  ;; Segment is readable
 
 ;; Dynamic section entry.
+restruc Elf64_Dyn
 struc Elf64_Dyn
  {
   .d_tag         dq ?    ;; Dynamic entry type
@@ -151,5 +156,3 @@ virtual at 0
   _Elf64_Dyn_ Elf64_Dyn
   sizeof.Elf64_Dyn = $
 end virtual
-
-end if ;; _ELF64_INC_

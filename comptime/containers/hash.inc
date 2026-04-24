@@ -1,9 +1,7 @@
-if ~ definite _HASH_INC_
-_HASH_INC_ equ 1
-
 ;;
 ;; Collection of useful hash functions
 ;;
+purge HASH_VTEXT_SIMPLE
 macro HASH_VTEXT_SIMPLE vtext*, length*, output*
  {
   local hash, i, bitlen
@@ -20,6 +18,7 @@ macro HASH_VTEXT_SIMPLE vtext*, length*, output*
   output = hash
  }
 
+purge HASH_VALUE_SIMPLE
 macro HASH_VALUE_SIMPLE value*, length*, output*
  {
   local hash, i, bitlen
@@ -35,4 +34,3 @@ macro HASH_VALUE_SIMPLE value*, length*, output*
   end while
   output = hash
  }
-end if ;; _HASH_INC_
