@@ -11,6 +11,7 @@ include 'vtext.inc'
 ;;
 ;; Print null-terminated string.
 ;; cstr - memory pointer with DEREF syntax
+purge PRINT_CSTR
 macro PRINT_CSTR cstr*
  {
   DEREF esi, cstr
@@ -20,10 +21,11 @@ macro PRINT_CSTR cstr*
 
 ;;
 ;; Print integer value for debug purposes.
+purge PRINT_VALUE
 macro PRINT_VALUE reg*, msg:''
  {
   local BUF_LEN
-    BUF_LEN = 24 ;; Allocated on stack for formatting numbers
+    BUF_LEN = 16 ;; Allocated on stack for formatting numbers
     mov esi, reg
   if msg eq ''
     PRINT_INL `reg, ": "
@@ -31,14 +33,15 @@ macro PRINT_VALUE reg*, msg:''
     PRINT_INL msg
   end if
     sub esp, BUF_LEN
-    ITOA [esp], esi, 64, 10, 0
-    PRINT rsp, rdx
+    ITOA [esp], esi, 32, 10, 0
+    PRINT esp, edx
     PRINT_INL 0xA
     add esp, BUF_LEN
 }
 
 ;; Print inline message
 ;; (message will be allocated inplace in the code)
+purge PRINT_INL
 macro PRINT_INL [bytes*]
  {
  common
@@ -49,7 +52,8 @@ macro PRINT_INL [bytes*]
     PRINT [.msg], .msg#.size
  }
 
- macro PRINT_STACK [bytes*]
+purge PRINT_STACK
+macro PRINT_STACK [bytes*]
  {
  common
   VTEXT _bytes, bytes
@@ -60,20 +64,24 @@ macro PRINT_INL [bytes*]
 
 ;; Print inline message
 ;; (message will be allocated inplace in the code)
+purge ERROR_INL
 macro ERROR_INL [bytes*]
  {
  common
-  local .msg
-    jmp .code
-.msg BUFFER bytes
-.code:
-    ERROR [.msg], .msg#.size
+  local .msg, .code
+  jmp .code
+  .msg BUFFER bytes
+  .code:
+  ERROR [.msg], .msg#.size
  }
 
+purge PRINT
 macro PRINT addr*, size* { SYSCALL WRITE, STDOUT, addr, size }
+purge ERROR
 macro ERROR addr*, size* { SYSCALL WRITE, STDERR, addr, size }
 
 ;; Stores bytes and its size (comptime)
+restruc BUFFER
 struc BUFFER [args*]
  {
  common
