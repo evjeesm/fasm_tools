@@ -1,11 +1,10 @@
-if ~ definite _INL_ITOA_INC_
-_INC_ITOA_INC_ equ 1
 include '../arch/x86_64/registers.inc'
 
 ;; Registers in use:
 ;;   rdi - dest
 ;;   rdx - char counter
 ;;   ... - rest registers used in _ITOA_BODY[_SIGNED]
+purge ITOA
 macro ITOA dest*, src*, bits:64, base:10, signed:0, case:LOWER, term
  {
     _ITOA_ASSERT bits,base,signed,case,term
@@ -21,6 +20,7 @@ macro ITOA dest*, src*, bits:64, base:10, signed:0, case:LOWER, term
   end if
  }
 
+purge _ITOA_ASSERT
 macro _ITOA_ASSERT bits*, base*, signed*, case*, term
  {
   assert bits >= 1 & bits <= 64 ; bit range exceeded
@@ -39,6 +39,7 @@ macro _ITOA_ASSERT bits*, base*, signed*, case*, term
 ;;   rax - src
 ;;   rdi - dest
 ;;   ... - rest registers used in _READ_BITS
+purge _ITOA_SET_DEST_AND_SRC
 macro _ITOA_SET_DEST_AND_SRC dest*, src*, bits*
  {
   if ~ dest eq rdi
@@ -69,6 +70,7 @@ macro _ITOA_SET_DEST_AND_SRC dest*, src*, bits*
 ;; Load memory into rax depending on bits amount
 ;; Registers in use:
 ;;   rax - src
+purge _READ_BITS
 macro _READ_BITS src*, bits*
  {
   if bits <= 8
@@ -87,6 +89,7 @@ macro _READ_BITS src*, bits*
 ;;   rdi - dest
 ;;   rdx - char counter
 ;;   ... - rest registers used in _ITOA_BODY
+purge _ITOA_BODY_SIGNED
 macro _ITOA_BODY_SIGNED bits*, base*
  {
   local .positive, .exit
@@ -112,6 +115,7 @@ macro _ITOA_BODY_SIGNED bits*, base*
 ;;   r9  - ascii table
 ;;   r11 - division operand
 ;;   rsi - copy string
+purge _ITOA_BODY
 macro _ITOA_BODY bits*, base*
  {
   local .code, .digit, .ascii
@@ -154,6 +158,7 @@ macro _ITOA_BODY bits*, base*
     add rsp, rdx
  }
 
+purge _EMBED_ASCII
 macro _EMBED_ASCII base*, case*
  {
   local ..ascii_digits
@@ -170,6 +175,7 @@ macro _EMBED_ASCII base*, case*
   end repeat
  }
 
+purge _PAD_WITH_ZEROES
 macro _PAD_WITH_ZEROES bits*, base*
  {
     local .zeroes, .no_zeroes, base_power, tdigits
@@ -190,5 +196,3 @@ macro _PAD_WITH_ZEROES bits*, base*
 .no_zeroes:
     mov rcx, tdigits
  }
-
-end if ;; _INC_ITOA_INC_
