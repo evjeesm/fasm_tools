@@ -47,8 +47,8 @@ macro PRINT_INL [bytes*]
  common
   local .msg, .code
   jmp .code
-  msg BUFFER bytes
-  code:
+  .msg BUFFER bytes
+  .code:
   PRINT [.msg], .msg#.size
  }
 
@@ -68,10 +68,10 @@ purge ERROR_INL
 macro ERROR_INL [bytes*]
  {
  common
-  local .msg
-    jmp .code
-.msg BUFFER bytes
-.code:
+  local .msg, .code
+  jmp .code
+  .msg BUFFER bytes
+  .code:
     ERROR [.msg], .msg#.size
  }
 
