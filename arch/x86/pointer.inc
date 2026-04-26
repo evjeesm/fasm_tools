@@ -5,7 +5,7 @@ restruc REL_PTR
 struc REL_PTR [symbol*]
  {
  forward
-  dq symbol - $
+  dd symbol - $
  }
 
 ;; Convert rip-relative pointer to absolute
@@ -13,9 +13,9 @@ purge REL_TO_ABS
 macro REL_TO_ABS reg*, relptr*
  {
  common
-  TRACE <lea rax, [relptr]> ;; base
-  TRACE <mov reg, [rax]>
-  TRACE <add reg, rax>
+  TRACE <lea eax, [relptr]> ;; base
+  TRACE <mov reg, [eax]>
+  TRACE <add reg, eax>
  }
 
 ;; Multiple dereference of regular pointer
