@@ -12,15 +12,22 @@
 
 ;; The ELF file header.  This appears at the start of every ELF file.
 
+restore SHN_LORESERVE
 SHN_LORESERVE equ 0xff00
+restore SHN_XINDEX
 SHN_XINDEX equ 0xffff
+restore SHN_UNDEF
 SHN_UNDEF equ 0
+restore SHT_SYMTAB
 SHT_SYMTAB equ 2
+restore SHT_STRTAB
 SHT_STRTAB equ 3
 
 
+restore ELFMAG
 ELFMAG equ 0x464c_457f
 
+restore EI_NIDENT
 EI_NIDENT equ 16
 
 restruc Elf64_Ehdr
@@ -47,10 +54,12 @@ virtual at 0
 end virtual
 
 ;; Object file types
+restore ET_EXEC
 ET_EXEC equ 2
 ;;...
 
 ;; Supported machines
+restore EM_X86_64
 EM_X86_64 equ 62
 ;; EM_ARM equ 40
 ;;...
@@ -135,12 +144,16 @@ virtual at 0
 end virtual
 
 ;; Legal values for p_type (segment type).
+restore PT_LOAD
 PT_LOAD equ 1   ;; Loadable program segment
 ;...
 
 ;; Legal values for p_flags (segment flags).
+restore PF_X
 PF_X equ (1 shl 0)  ;; Segment is executable
+restore PF_W
 PF_W equ (1 shl 1)  ;; Segment is writable
+restore PF_R
 PF_R equ (1 shl 2)  ;; Segment is readable
 
 ;; Dynamic section entry.
