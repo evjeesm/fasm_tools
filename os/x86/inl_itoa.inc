@@ -1,8 +1,8 @@
-include '../arch/x86_64/registers.inc'
+include '../arch/x86/registers.inc'
 
 ;; Registers in use:
-;;   rdi - dest
-;;   rdx - char counter
+;;   edi - dest
+;;   edx - char counter
 ;;   ... - rest registers used in _ITOA_BODY[_SIGNED]
 purge ITOA
 macro ITOA dest*, src*, bits:64, base:10, signed:0, case:LOWER, term
@@ -15,8 +15,8 @@ macro ITOA dest*, src*, bits:64, base:10, signed:0, case:LOWER, term
     _ITOA_BODY_SIGNED bits,base
   end if
   if ~ term eq
-    mov byte [rdi], term
-    inc rdx ;; increment to include terminator character
+    mov byte [edi], term
+    inc edx ;; increment to include terminator character
   end if
  }
 
@@ -36,14 +36,14 @@ macro _ITOA_ASSERT bits*, base*, signed*, case*, term
  }
 
 ;; Registers in use:
-;;   rax - src
-;;   rdi - dest
+;;   eax - src
+;;   edi - dest
 ;;   ... - rest registers used in _READ_BITS
 purge _ITOA_SET_DEST_AND_SRC
 macro _ITOA_SET_DEST_AND_SRC dest*, src*, bits*
  {
-  if ~ dest eq rdi
-    lea rdi, dest ; setup destination
+  if ~ dest eq edi
+    lea edi, dest ; setup destination
   end if
   if src in <X32_REGS>
     mov eax, src
@@ -54,22 +54,22 @@ macro _ITOA_SET_DEST_AND_SRC dest*, src*, bits*
       match [loc], src
       \{
         _READ_BITS [loc], bits
-      break
+        break
       \}
-      if ~ src eqtype rax   \; is not a register
+      if ~ src eqtype eax   \; is not a register
        & ~ src relativeto 0 \; is not numeric const
        & defined src         ; is defined symbol
-        lea rax, [src]
+        lea eax, [src]
       else
-        mov rax, src
+        mov eax, src
       end if
     end repeat
   end if
  }
 
-;; Load memory into rax depending on bits amount
+;; Load memory into eax depending on bits amount
 ;; Registers in use:
-;;   rax - src
+;;   eax - src
 purge _READ_BITS
 macro _READ_BITS src*, bits*
  {
@@ -79,42 +79,39 @@ macro _READ_BITS src*, bits*
     mov ax, word src
   else if bits <= 32
     mov eax, dword src
-  else if bits <= 64
-    mov rax, qword src
   end if
  }
 
 ;; Registers in use:
-;;   rax - src
-;;   rdi - dest
-;;   rdx - char counter
+;;   eax - src
+;;   edi - dest
+;;   edx - char counter
 ;;   ... - rest registers used in _ITOA_BODY
 purge _ITOA_BODY_SIGNED
 macro _ITOA_BODY_SIGNED bits*, base*
  {
   local .positive, .exit
-    push rax ;; save original number
-    bt rax, bits-1
+    push eax ;; save original number
+    bt eax, bits-1
     jnc .positive  ;; skip sign
-    neg rax
-    mov byte [rdi], '-'
-    inc rdi
+    neg eax
+    mov byte [edi], '-'
+    inc edi
 .positive:
     _ITOA_BODY bits, base
-    pop rax
-    bt rax, bits-1
+    pop eax
+    bt eax, bits-1
     jnc .exit ;; skip sign
-    inc rdx
+    inc edx
 .exit:
  }
 
 ;; Registers in use:
-;;   rax - argument
-;;   rdx - mask; remainder of division; ascii char
-;;   rcx - counter; copy string
-;;   r9  - ascii table
-;;   r11 - division operand
-;;   rsi - copy string
+;;   eax - argument
+;;   edx - mask; remainder of division; ascii char
+;;   ecx - counter; copy string
+;;   esi  - ascii table; copy string
+;;   ebx - division operand
 purge _ITOA_BODY
 macro _ITOA_BODY bits*, base*
  {
@@ -122,22 +119,22 @@ macro _ITOA_BODY bits*, base*
     jmp .code
 .ascii: _EMBED_ASCII base, case
 .code:
-    xor rcx, rcx
-  if bits < 64    ; mask selected bits
-    mov rdx, 1
-    shl rdx, bits
-    dec rdx
-    and rax, rdx ; apply mask
+    xor ecx, ecx
+  if bits < 32    ; mask selected bits
+    mov edx, 1
+    shl edx, bits
+    dec edx
+    and eax, edx ; apply mask
   end if
     xor edx, edx ; clear remainder
-    mov r11, base
-    lea r9, [.ascii]
+    mov ebx, base
+    lea esi, [.ascii]
 .digit:
-    div r11
-    dec rsp             ; allocate digit
+    div ebx
+    dec esp             ; allocate digit
     inc cl              ; count bytes
-    mov dl, [r9 + rdx]  ; to ascii
-    mov byte [rsp], dl  ; store
+    mov dl, [esi + edx] ; to ascii
+    mov byte [esp], dl  ; store
     xor edx, edx
     test eax, eax
     jnz .digit
@@ -148,14 +145,14 @@ macro _ITOA_BODY bits*, base*
   end if
 
     ;; copy from stack to dest
-    mov rdx, rcx ; backup count
+    mov edx, ecx ; backup count
     cld
-    ;; xor rax, rax ;; ? wtf
-    mov rsi, rsp
+    ;; xor eax, eax ;; ? wtf
+    mov esi, esp
     rep movsb
 
     ;; clear stack
-    add rsp, rdx
+    add esp, edx
  }
 
 purge _EMBED_ASCII
@@ -185,14 +182,14 @@ macro _PAD_WITH_ZEROES bits*, base*
     ;; ceil(bits / base_power)
     tdigits = (bits+base_power-1) / base_power
 
-    mov rax, tdigits
-    sub rax, rcx
+    mov eax, tdigits
+    sub eax, ecx
     jz .no_zeroes
-    mov rcx, rax
+    mov ecx, eax
 .zeroes:
-    dec rsp
-    mov byte [rsp], '0'
+    dec esp
+    mov byte [esp], '0'
     loop .zeroes
 .no_zeroes:
-    mov rcx, tdigits
+    mov ecx, tdigits
  }

@@ -72,7 +72,7 @@ macro ERROR_INL [bytes*]
   jmp .code
   .msg BUFFER bytes
   .code:
-  ERROR [.msg], .msg#.size
+    ERROR [.msg], .msg#.size
  }
 
 purge PRINT

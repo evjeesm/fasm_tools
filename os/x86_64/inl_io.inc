@@ -49,7 +49,7 @@ macro PRINT_INL [bytes*]
   jmp .code
   .msg BUFFER bytes
   .code:
-  PRINT [.msg], .msg#.size
+    PRINT [.msg], .msg#.size
  }
 
 purge PRINT_STACK
