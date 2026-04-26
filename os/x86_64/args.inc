@@ -9,6 +9,7 @@ include 'inl_io.inc'
 ;;
 ;; Read argc into a register
 ;;
+purge LOAD_ARGC
 macro LOAD_ARGC reg*, skip:0
  {
     mov reg, [rsp+skip]
@@ -17,11 +18,13 @@ macro LOAD_ARGC reg*, skip:0
 ;;
 ;; Read argc into a register
 ;;
+purge LOAD_ARGC_AFTER_PROLOG
 macro LOAD_ARGC_AFTER_PROLOG reg* { LOAD_ARGC reg, 8 }
 
 ;;
 ;; Override argc
 ;;
+purge SET_ARGC
 macro SET_ARGC argc*
  {
     mov dword [rsp], argc
@@ -30,6 +33,7 @@ macro SET_ARGC argc*
 ;;
 ;; Override argv
 ;;
+purge SET_ARGV
 macro SET_ARGV addr*
  {
     lea rax, addr
@@ -39,6 +43,7 @@ macro SET_ARGV addr*
 ;;
 ;; Loads argument array pointer into a register
 ;;
+purge LOAD_ARGV
 macro LOAD_ARGV reg*,skip:0
  {
     lea reg, [rsp+8+skip]
@@ -47,6 +52,7 @@ macro LOAD_ARGV reg*,skip:0
 ;;
 ;; Loads environment pointer into a register
 ;;
+purge LOAD_ENVP
 macro LOAD_ENVP reg*, skip:0
  {
     LOAD_ARGC rax, skip
@@ -58,6 +64,7 @@ macro LOAD_ENVP reg*, skip:0
 ;;
 ;; Loads environment pointer into a register
 ;;
+purge LOAD_ENVP_AFTER_PROLOG
 macro LOAD_ENVP_AFTER_PROLOG reg* 
  {
     LOAD_ARGC_AFTER_PROLOG rax
@@ -69,6 +76,7 @@ macro LOAD_ENVP_AFTER_PROLOG reg*
 ;;
 ;; Count amount of env variables (Null-terminated list)
 ;;
+purge ENVP_COUNT
 macro ENVP_COUNT envp*, reg*
  {
     xor rax, rax
@@ -84,6 +92,7 @@ macro ENVP_COUNT envp*, reg*
 ;;
 ;; Load N-th argument pointer into a register
 ;;
+purge LOAD_NTH_ARG
 macro LOAD_NTH_ARG reg*, argv*, n*
  {
   if n eqtype rax
@@ -97,6 +106,7 @@ macro LOAD_NTH_ARG reg*, argv*, n*
 ;;
 ;; Load N-th env pointer into a register
 ;;
+purge LOAD_NTH_ENV
 macro LOAD_NTH_ENV reg*, envp*, n*
  {
   if n eqtype rax
@@ -110,6 +120,7 @@ macro LOAD_NTH_ENV reg*, envp*, n*
 ;;
 ;; Replace N-th ARG with other pointer
 ;;
+purge SET_NTH_ARG
 macro SET_NTH_ARG argv*, n*, addr*
  {
     lea rax, [addr]
@@ -120,6 +131,7 @@ macro SET_NTH_ARG argv*, n*, addr*
 ;;
 ;; Replace N-th ENV with other pointer
 ;;
+purge SET_NTH_ENV
 macro SET_NTH_ENV envp*, n*, addr*
  {
   if addr eq 0
@@ -134,6 +146,7 @@ macro SET_NTH_ENV envp*, n*, addr*
 ;;
 ;; Print entirety of argument list
 ;;
+purge PRINT_ARGS
 macro PRINT_ARGS argv*, sep:' ', term:0xA
  {
  local .next_arg, .exit
@@ -154,6 +167,7 @@ jmp .next_arg
 ;;
 ;; Print entirety of enviromnent variable list
 ;;
+purge PRINT_ENV
 macro PRINT_ENV envp*, sep:' ', term:0xA
  {
  local .next_env, .exit
@@ -175,6 +189,7 @@ jmp .next_env
 ;;
 ;; Make null ternimated list of pointers on the stack,
 ;; elements are placed in stack order (first will be placed on top)
+purge PUSH_PTRS
 macro PUSH_PTRS [args*]
  {
  common
